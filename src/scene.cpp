@@ -9,7 +9,7 @@ m_diffuseColor(glm::vec3(0.5, 0.5, 0.5)), m_width(1024), m_height(1024)
 }
 
 glm::vec3 Scene::mvpTransform(glm::vec3& vec) const{
-    //将向量转为齐次坐标后再变换再转为真实坐标
+    //灏嗗悜閲忚浆涓洪綈娆″潗鏍囧悗鍐嶅彉鎹㈠啀杞负鐪熷疄鍧愭爣
     glm::vec4 vec1 = glm::vec4(vec, 1.0f) * m_mvp;
     return { vec1.x / vec1.w, vec1.y / vec1.w, vec1.z / vec1.w };
 }

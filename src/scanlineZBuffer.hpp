@@ -12,13 +12,13 @@
 
 #define EPSILON 1e-5
 
-/*! @brief Èı½ÇĞÎ±í
+/*! @brief ä¸‰è§’å½¢è¡¨
  *
- *  dzx: Èı½ÇĞÎÉÏµÄµãxÖµÃ¿¼Ó1Ëù¶ÔÓ¦µÄzÖµµÄÔöÁ¿
+ *  dzx: ä¸‰è§’å½¢ä¸Šçš„ç‚¹xå€¼æ¯åŠ 1æ‰€å¯¹åº”çš„zå€¼çš„å¢é‡
  *
- *	dzy: Èı½ÇĞÎÉÏµÄµãyÖµÃ¿¼õ1Ëù¶ÔÓ¦µÄzÖµµÄÔöÁ¿
+ *	dzy: ä¸‰è§’å½¢ä¸Šçš„ç‚¹yå€¼æ¯å‡1æ‰€å¯¹åº”çš„zå€¼çš„å¢é‡
  *
- *	color: Èı½ÇĞÎµÄÑÕÉ«
+ *	color: ä¸‰è§’å½¢çš„é¢œè‰²
  *
  */
 struct TriangleTable {
@@ -26,17 +26,17 @@ struct TriangleTable {
 	glm::vec3 color;
 };
 
-/*! @brief ·ÖÀà±ß±í
+/*! @brief åˆ†ç±»è¾¹è¡¨
  *
- *  x: ±ßµÄÉÏ¶¥µãµÄx×ø±ê
+ *  x: è¾¹çš„ä¸Šé¡¶ç‚¹çš„xåæ ‡
  *
- *	dx: ±ßÉÏµÄµãyÖµÃ¿¼õ1Ëù¶ÔÓ¦µÄxÖµµÄÔöÁ¿
+ *	dx: è¾¹ä¸Šçš„ç‚¹yå€¼æ¯å‡1æ‰€å¯¹åº”çš„xå€¼çš„å¢é‡
  *
- *	dy: ±ßËù¿çÔ½µÄÉ¨ÃèÏßÊı
+ *	dy: è¾¹æ‰€è·¨è¶Šçš„æ‰«æçº¿æ•°
  *
- *	z: ±ßµÄÉÏ¶¥µãµÄzÖµ
+ *	z: è¾¹çš„ä¸Šé¡¶ç‚¹çš„zå€¼
  *
- *	id: ±ßËùÔÚµÄÈı½ÇĞÎµÄid
+ *	id: è¾¹æ‰€åœ¨çš„ä¸‰è§’å½¢çš„id
  *
  */
 struct ClassifyEdgeTable {
@@ -47,27 +47,27 @@ struct ClassifyEdgeTable {
 	int id;
 };
 
-/*! @brief »î»¯±ß±í
+/*! @brief æ´»åŒ–è¾¹è¡¨
  *
- *  xLeft: ×ó²à±ßµÄÉÏ¶¥µãµÄx×ø±ê
+ *  xLeft: å·¦ä¾§è¾¹çš„ä¸Šé¡¶ç‚¹çš„xåæ ‡
  *
- *  xRight: ÓÒ²à±ßµÄÉÏ¶¥µãµÄx×ø±ê
+ *  xRight: å³ä¾§è¾¹çš„ä¸Šé¡¶ç‚¹çš„xåæ ‡
  *
- *	dxLeft: ×ó²à±ßÉÏµÄµãyÖµÃ¿¼õ1Ëù¶ÔÓ¦µÄxÖµµÄÔöÁ¿
+ *	dxLeft: å·¦ä¾§è¾¹ä¸Šçš„ç‚¹yå€¼æ¯å‡1æ‰€å¯¹åº”çš„xå€¼çš„å¢é‡
  *
- *	dxRight: ÓÒ²à±ßÉÏµÄµãyÖµÃ¿¼õ1Ëù¶ÔÓ¦µÄxÖµµÄÔöÁ¿
+ *	dxRight: å³ä¾§è¾¹ä¸Šçš„ç‚¹yå€¼æ¯å‡1æ‰€å¯¹åº”çš„xå€¼çš„å¢é‡
  *
- *	dyLeft: ×ó²à±ßËù¿çÔ½µÄÉ¨ÃèÏßÊı
+ *	dyLeft: å·¦ä¾§è¾¹æ‰€è·¨è¶Šçš„æ‰«æçº¿æ•°
  *
- *	dyRight: ÓÒ²à±ßËù¿çÔ½µÄÉ¨ÃèÏßÊı
+ *	dyRight: å³ä¾§è¾¹æ‰€è·¨è¶Šçš„æ‰«æçº¿æ•°
  *
- *	z: ±ßµÄÉÏ¶¥µãµÄzÖµ
+ *	z: è¾¹çš„ä¸Šé¡¶ç‚¹çš„zå€¼
  *
- *	dzx: ¸Ã±ß¶ÔÓ¦µÄÈı½ÇĞÎÉÏµÄµãxÖµÃ¿¼Ó1Ëù¶ÔÓ¦µÄzÖµµÄÔöÁ¿
+ *	dzx: è¯¥è¾¹å¯¹åº”çš„ä¸‰è§’å½¢ä¸Šçš„ç‚¹xå€¼æ¯åŠ 1æ‰€å¯¹åº”çš„zå€¼çš„å¢é‡
  *
- *	dzy: ¸Ã±ßËùÔÚµÄÈı½ÇĞÎÉÏµÄµãyÖµÃ¿¼õ1Ëù¶ÔÓ¦µÄzÖµµÄÔöÁ¿
+ *	dzy: è¯¥è¾¹æ‰€åœ¨çš„ä¸‰è§’å½¢ä¸Šçš„ç‚¹yå€¼æ¯å‡1æ‰€å¯¹åº”çš„zå€¼çš„å¢é‡
  *
- *	id: ±ßËùÔÚµÄÈı½ÇĞÎµÄid
+ *	id: è¾¹æ‰€åœ¨çš„ä¸‰è§’å½¢çš„id
  *
  */
 struct ActiveEdgeTable {
@@ -78,9 +78,9 @@ struct ActiveEdgeTable {
 	int id;
 };
 
-/*! @brief É¨ÃèÏßz-BufferÀà
+/*! @brief æ‰«æçº¿z-Bufferç±»
  *
- *  Ê¹ÓÃÉ¨ÃèÏßz-Buffer½øĞĞ¹âÕ¤»¯£¬½öÖ§³ÖÈ«ÊÇÈı½ÇĞÎµÄÄ£ĞÍ
+ *  ä½¿ç”¨æ‰«æçº¿z-Bufferè¿›è¡Œå…‰æ …åŒ–ï¼Œä»…æ”¯æŒå…¨æ˜¯ä¸‰è§’å½¢çš„æ¨¡å‹
  *
  */
 class ScanlineZBuffer{
@@ -88,68 +88,68 @@ public:
 	ScanlineZBuffer(int width, int height);
 	~ScanlineZBuffer();
 
-	/*! @brief ½«×îÖÕ½á¹ûĞ´ÈëÖ¸¶¨µÄpngÍ¼Æ¬
+	/*! @brief å°†æœ€ç»ˆç»“æœå†™å…¥æŒ‡å®šçš„pngå›¾ç‰‡
 	 */
 	void render() const;
-	/*! @brief ½«³¡¾°¹âÕ¤»¯
-	 *  @param model: Ä£ĞÍÀà
-	 *  @param scene: ³¡¾°Àà
+	/*! @brief å°†åœºæ™¯å…‰æ …åŒ–
+	 *  @param model: æ¨¡å‹ç±»
+	 *  @param scene: åœºæ™¯ç±»
 	 */
 	void rasterizeScene(Model &model, Scene &scene);
-	/*! @brief Õ¹Ê¾\½¨±íÊ±¼ä¡¢äÖÈ¾Ê±¼äÒÔ¼°×ÜÊ±¼ä
+	/*! @brief å±•ç¤º\å»ºè¡¨æ—¶é—´ã€æ¸²æŸ“æ—¶é—´ä»¥åŠæ€»æ—¶é—´
 	 */
 	void showInfo() const;
-	/*! @brief ÉèÖÃäÖÈ¾Ä£Ê½
-	 *  @param modelNum: äÖÈ¾Ä£Ê½£¬1±íÊ¾ÌØ»¯Ä£Ê½£¬ÆäÓàÎª¾­µäÄ£Ê½
+	/*! @brief è®¾ç½®æ¸²æŸ“æ¨¡å¼
+	 *  @param modelNum: æ¸²æŸ“æ¨¡å¼ï¼Œ1è¡¨ç¤ºç‰¹åŒ–æ¨¡å¼ï¼Œå…¶ä½™ä¸ºç»å…¸æ¨¡å¼
 	 */
 	inline void setMode(int modelNum) { mode = modelNum; }
 private:
-	/*! @brief Èı½ÇĞÎ×Öµä£¬¿ÉÒÔÍ¨¹ıÈı½ÇĞÎid£¬¿ìËÙ²éµ½¶ÔÓ¦µÄÈı½ÇĞÎ
+	/*! @brief ä¸‰è§’å½¢å­—å…¸ï¼Œå¯ä»¥é€šè¿‡ä¸‰è§’å½¢idï¼Œå¿«é€ŸæŸ¥åˆ°å¯¹åº”çš„ä¸‰è§’å½¢
 	 */
 	std::unordered_map<int, TriangleTable> m_triangles;
-	/*! @brief ·ÖÀà¶à±ßĞÎ±í
+	/*! @brief åˆ†ç±»å¤šè¾¹å½¢è¡¨
 	 */
 	std::vector<ClassifyEdgeTable>* m_classifyEdgeTables;
-	/*! @brief »î»¯Èı½ÇĞÎID¼¯ºÏ
+	/*! @brief æ´»åŒ–ä¸‰è§’å½¢IDé›†åˆ
 	 */
 	std::unordered_set<int> m_activeTriangles;
-	/*! @brief »î»¯±ß±í£¬¿ÉÒÔÍ¨¹ı¶à±ßĞÎID¿ìËÙ²éÑ¯µ½¶ÔÓ¦»î»¯µÄ±ß
+	/*! @brief æ´»åŒ–è¾¹è¡¨ï¼Œå¯ä»¥é€šè¿‡å¤šè¾¹å½¢IDå¿«é€ŸæŸ¥è¯¢åˆ°å¯¹åº”æ´»åŒ–çš„è¾¹
 	 */
 	std::unordered_map<int, ActiveEdgeTable> m_activeEdgeTables;
-	/*! @brief äÖÈ¾Ä£Ê½
+	/*! @brief æ¸²æŸ“æ¨¡å¼
 	 *
-	 *	1±íÊ¾ÌØ»¯Ä£Ê½£¬ÆäÓàÎª¾­µäÄ£Ê½
+	 *	1è¡¨ç¤ºç‰¹åŒ–æ¨¡å¼ï¼Œå…¶ä½™ä¸ºç»å…¸æ¨¡å¼
 	 *
 	 */
 	int mode;
 
-	/*! @brief äÖÈ¾´°¿Ú¿í¶È¡¢¸ß¶È
+	/*! @brief æ¸²æŸ“çª—å£å®½åº¦ã€é«˜åº¦
 	 */
 	int m_width, m_height;
 	/*! @brief z-buffer
 	 */
 	float* m_zBuffer;
-	/*! @brief ×îÖÕÍ¼ÏñµÄRGBAÊı¾İ£¬Ã¿4Î»´ú±íÒ»¸öÏñËØµÄRGBA
+	/*! @brief æœ€ç»ˆå›¾åƒçš„RGBAæ•°æ®ï¼Œæ¯4ä½ä»£è¡¨ä¸€ä¸ªåƒç´ çš„RGBA
 	 */
 	unsigned char* m_image;
-	/*! @brief äÖÈ¾µÄÄ£ĞÍµÄÃû³Æ
+	/*! @brief æ¸²æŸ“çš„æ¨¡å‹çš„åç§°
 	 */
 	std::string m_modelName;
-	/*! @brief ½¨±íËùĞèÊ±¼ä
+	/*! @brief å»ºè¡¨æ‰€éœ€æ—¶é—´
 	 */
 	std::chrono::duration<double, std::milli> m_buildTableTime;
-	/*! @brief äÖÈ¾ËùĞèÊ±¼ä
+	/*! @brief æ¸²æŸ“æ‰€éœ€æ—¶é—´
      */
 	std::chrono::duration<double, std::milli> m_renderTime;
 
-	/*! @brief Éú³É·ÖÀàµÄ±ß±í
-	 *  @param model: Ä£ĞÍÀà
-	 *  @param scene: ³¡¾°Àà
+	/*! @brief ç”Ÿæˆåˆ†ç±»çš„è¾¹è¡¨
+	 *  @param model: æ¨¡å‹ç±»
+	 *  @param scene: åœºæ™¯ç±»
 	 */
 	void generateTables(Model &model, Scene &scene);
-	/*! @brief ¹âÕ¤»¯Èı½ÇĞÎ
-	 *  @param face: Èı½ÇĞÎµÄ¶¥µãÊı×é
-	 *  @param color: Èı½ÇĞÎµÄÑÕÉ«
+	/*! @brief å…‰æ …åŒ–ä¸‰è§’å½¢
+	 *  @param face: ä¸‰è§’å½¢çš„é¡¶ç‚¹æ•°ç»„
+	 *  @param color: ä¸‰è§’å½¢çš„é¢œè‰²
 	 */
 	void rasterizeTriangle(glm::vec3* face, glm::vec3 color);
 };

@@ -28,9 +28,9 @@ ScanlineZBuffer::~ScanlineZBuffer() {
 
 void ScanlineZBuffer::showInfo() const {
 	if (mode == 1) {
-		std::cout << "ÌØ»¯ScanlineZBuffer: " << "äÖÈ¾Ê±¼äÎª" << m_renderTime.count() << "ms" << std::endl;
+		std::cout << "ç‰¹åŒ–ScanlineZBuffer: " << "æ¸²æŸ“æ—¶é—´ä¸º" << m_renderTime.count() << "ms" << std::endl;
 	}else {
-		std::cout << "¾­µäScanlineZBuffer: ½¨±íÊ±¼äÎª" << m_buildTableTime.count() << "ms, " << "äÖÈ¾Ê±¼äÎª" << m_renderTime.count() << "ms, " << "×ÜÊ±¼äÎª" << (m_buildTableTime + m_renderTime).count() << "ms" << std::endl;
+		std::cout << "ç»å…¸ScanlineZBuffer: å»ºè¡¨æ—¶é—´ä¸º" << m_buildTableTime.count() << "ms, " << "æ¸²æŸ“æ—¶é—´ä¸º" << m_renderTime.count() << "ms, " << "æ€»æ—¶é—´ä¸º" << (m_buildTableTime + m_renderTime).count() << "ms" << std::endl;
 	}
 }
 
@@ -46,8 +46,8 @@ void ScanlineZBuffer::render() const {
 
 void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 	m_modelName = model.getModelName();
-	//Ñ¡Ôñ²»Í¬µÄäÖÈ¾Ä£Ê½¿É¸ù¾İ²»Í¬·½·¨½øĞĞäÖÈ¾
-	//1±íÊ¾ÎªÌØ»¯É¨ÃèÏßËã·¨£¬ÆäÓàÎª¾­µäÉ¨ÃèÏßËã·¨
+	//é€‰æ‹©ä¸åŒçš„æ¸²æŸ“æ¨¡å¼å¯æ ¹æ®ä¸åŒæ–¹æ³•è¿›è¡Œæ¸²æŸ“
+	//1è¡¨ç¤ºä¸ºç‰¹åŒ–æ‰«æçº¿ç®—æ³•ï¼Œå…¶ä½™ä¸ºç»å…¸æ‰«æçº¿ç®—æ³•
 	if (mode == 1) {
 		auto start = std::chrono::steady_clock::now();
 		int faceNum = model.getFaceNum();
@@ -77,11 +77,11 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 			ClassifyEdgeTable classifyEdge = m_classifyEdgeTables[i][j];
 			int id = classifyEdge.id;
 			if (m_activeTriangles.count(id)) {
-				//µ±¸Ã±ß¶ÔÓ¦µÄÈı½ÇĞÎ²»ÊÇÊ×´Î³öÏÖ£¬Ôò½øĞĞÒÔÏÂÅĞ¶Ï
-				//dyRight != -1 => ¸Ã±ß¶ÔÓĞ2Ìõ±ß£¬´ËÊ±ĞèÅĞ¶ÏÊÇ·ñÓĞ1Ìõ±ßÉ¨ÃèÍê±Ï£¬Èç¹ûÓĞ£¬Ôò½«¸Ã±ßÌî³äÖÁÉ¨ÃèÍê±ÏµÄÄÇÌõ±ß
-				//dyRight == -1 => ¸Ã±ß¶ÔÖ»ÓĞ1Ìõ±ß£¬´ËÊ±Ğè½øÈëÏÂÒ»²ãÅĞ¶Ï
-				//¸Ã±ßËùÔÚµÄÈı½ÇĞÎÊÇÉÏÆ½µ× => ¸ù¾İ¸Ã±ßÉÏ¶¥µãÓëÒÑÓĞ±ßµÄÉÏ¶¥µãµÄÎ»ÖÃÌî³ä±ß¶Ô
-				//¸Ã±ßËùÔÚµÄÈı½ÇĞÎ²»ÊÇÉÏÆ½µ× => ¸ù¾İ¸Ã±ßxÔöÁ¿ÓëÒÑÓĞ±ßµÄxÔöÁ¿µÄ´óĞ¡¹ØÏµÌî³ä±ß¶Ô
+				//å½“è¯¥è¾¹å¯¹åº”çš„ä¸‰è§’å½¢ä¸æ˜¯é¦–æ¬¡å‡ºç°ï¼Œåˆ™è¿›è¡Œä»¥ä¸‹åˆ¤æ–­
+				//dyRight != -1 => è¯¥è¾¹å¯¹æœ‰2æ¡è¾¹ï¼Œæ­¤æ—¶éœ€åˆ¤æ–­æ˜¯å¦æœ‰1æ¡è¾¹æ‰«æå®Œæ¯•ï¼Œå¦‚æœæœ‰ï¼Œåˆ™å°†è¯¥è¾¹å¡«å……è‡³æ‰«æå®Œæ¯•çš„é‚£æ¡è¾¹
+				//dyRight == -1 => è¯¥è¾¹å¯¹åªæœ‰1æ¡è¾¹ï¼Œæ­¤æ—¶éœ€è¿›å…¥ä¸‹ä¸€å±‚åˆ¤æ–­
+				//è¯¥è¾¹æ‰€åœ¨çš„ä¸‰è§’å½¢æ˜¯ä¸Šå¹³åº• => æ ¹æ®è¯¥è¾¹ä¸Šé¡¶ç‚¹ä¸å·²æœ‰è¾¹çš„ä¸Šé¡¶ç‚¹çš„ä½ç½®å¡«å……è¾¹å¯¹
+				//è¯¥è¾¹æ‰€åœ¨çš„ä¸‰è§’å½¢ä¸æ˜¯ä¸Šå¹³åº• => æ ¹æ®è¯¥è¾¹xå¢é‡ä¸å·²æœ‰è¾¹çš„xå¢é‡çš„å¤§å°å…³ç³»å¡«å……è¾¹å¯¹
 				ActiveEdgeTable activeEdge = m_activeEdgeTables[id];
 				if (activeEdge.dyRight == -1) {
 					if (glm::abs(classifyEdge.x - activeEdge.xLeft) < EPSILON) {
@@ -125,16 +125,16 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 				}
 				m_activeEdgeTables[id] = activeEdge;
 			} else {
-				//µ±¸Ã±ß¶ÔÓ¦µÄÈı½ÇĞÎÊÇÊ×´Î³öÏÖ£¬ÔòÍ³Ò»½«¸Ã±ßÊÓÎª×ó²à±ß£¬Í¬Ê±½«dyRight¸³ÖµÎª-1ÒÔ±êÊ¶¸Ã»î»¯±ß¶ÔÖ»ÓĞ1Ìõ±ß
+				//å½“è¯¥è¾¹å¯¹åº”çš„ä¸‰è§’å½¢æ˜¯é¦–æ¬¡å‡ºç°ï¼Œåˆ™ç»Ÿä¸€å°†è¯¥è¾¹è§†ä¸ºå·¦ä¾§è¾¹ï¼ŒåŒæ—¶å°†dyRightèµ‹å€¼ä¸º-1ä»¥æ ‡è¯†è¯¥æ´»åŒ–è¾¹å¯¹åªæœ‰1æ¡è¾¹
 				m_activeEdgeTables[id] = { classifyEdge.x, 0.0f, classifyEdge.dx, 0.0f, classifyEdge.dy, -1, classifyEdge.z, m_triangles[id].dzx, m_triangles[id].dzy, id};
 				m_activeTriangles.insert(id);
 			}
 		}
 		for (auto it = m_activeEdgeTables.begin(); it != m_activeEdgeTables.end(); ) {
-			//¸ù¾İÉ¨ÃèÏßËã·¨¹âÕ¤»¯Èı½ÇĞÎ²¢¸üĞÂ²ÎÊı
+			//æ ¹æ®æ‰«æçº¿ç®—æ³•å…‰æ …åŒ–ä¸‰è§’å½¢å¹¶æ›´æ–°å‚æ•°
 			auto edge = it->second;
 			auto color = m_triangles[edge.id].color;
-			//µ±Ê¶±ğµ½¸Ã±ß¶ÔÖ»ÓĞ1Ìõ±ß£¬±íÊ¾¸Ã±ß¶ÔÓ¦µÄÈı½ÇĞÎÖ»¿çÔ½1ÌõÉ¨ÃèÏß£¬´ËÊ±Ö±½Ó´Ó×óÏòÓÒÉ¨ÃèÈı½ÇĞÎ
+			//å½“è¯†åˆ«åˆ°è¯¥è¾¹å¯¹åªæœ‰1æ¡è¾¹ï¼Œè¡¨ç¤ºè¯¥è¾¹å¯¹åº”çš„ä¸‰è§’å½¢åªè·¨è¶Š1æ¡æ‰«æçº¿ï¼Œæ­¤æ—¶ç›´æ¥ä»å·¦å‘å³æ‰«æä¸‰è§’å½¢
 			int xLeft = static_cast<int>(edge.xLeft), xRight = static_cast<int>(edge.dyRight == -1 ? (edge.xLeft + edge.dxLeft) : edge.xRight);
 			float z = edge.z, depth;
 			for (int j = xLeft; j <= xRight; j++) {
@@ -151,7 +151,7 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 			}
 			edge.dyLeft--;
 			edge.dyRight--;
-			//µ±Èı½ÇĞÎÉ¨ÃèÍê±Ï£¬ÒÆ³ıÏàÓ¦µÄ±ß¶Ô
+			//å½“ä¸‰è§’å½¢æ‰«æå®Œæ¯•ï¼Œç§»é™¤ç›¸åº”çš„è¾¹å¯¹
 			if ((edge.dyLeft == 0 && edge.dyRight == 0) || edge.dyRight == -2) {
 				m_activeEdgeTables.erase(it++);
 				continue;
@@ -183,12 +183,12 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 		for (int j = 0; j < 3; j++) {
 			faceDiff[j] = (face[j].y - face[(j + 1) % 3].y);
 		}
-		//ÓÉÓÚÊ¹ÓÃµÄÊÇ±ä»»ºóµÄzÖµ£¬¹ÊÊ¹ÓÃ±ä»»ºóµÄÈı½ÇĞÎ¼ÆËãËùÔÚÆ½ÃæµÄÏµÊı
+		//ç”±äºä½¿ç”¨çš„æ˜¯å˜æ¢åçš„zå€¼ï¼Œæ•…ä½¿ç”¨å˜æ¢åçš„ä¸‰è§’å½¢è®¡ç®—æ‰€åœ¨å¹³é¢çš„ç³»æ•°
 		float a = faceDiff[0] * (face[0].z - face[2].z) - (face[1].z - face[0].z) * faceDiff[2];
 		float b = (face[1].z - face[0].z) * (face[2].x - face[0].x) - (face[1].x - face[0].x) * (face[2].z - face[0].z);
 		float c = (face[1].x - face[0].x) * faceDiff[2] + faceDiff[0] * (face[2].x - face[0].x);
 		float dzx = -a / c, dzy = b / c;
-		//µ±Èı½ÇĞÎÃæ»ıÎª0Ê±£¬c=0£¬´ËÊ±ĞèÒª×ªÎªÏßµÄ·½Ê½¼ÆËãdzxÓëdzy
+		//å½“ä¸‰è§’å½¢é¢ç§¯ä¸º0æ—¶ï¼Œc=0ï¼Œæ­¤æ—¶éœ€è¦è½¬ä¸ºçº¿çš„æ–¹å¼è®¡ç®—dzxä¸dzy
 		if (glm::abs(c) < EPSILON) {
 			int minXIndex = 0, maxXIndex = 0, minYIndex = 0, maxYIndex = 0;
 			float minX = face[0].x, maxX = minX, maxY = face[0].y, minY = maxY;
@@ -214,8 +214,8 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 			dzy = (face[maxYIndex].z - face[minYIndex].z) / (maxY - minY);
 		}
 		m_triangles[i] = { dzx, dzy, diffuseColor * diffuseIntensity };
-		//µ±Èı½ÇĞÎÈı¸ö¶¥µãyÖµÏàÍ¬Ê±£¬¾­µäÉ¨ÃèÏßËã·¨»á²»äÖÈ¾Õâ¸öÈı½ÇĞÎ£¬´ËÊ±ĞèÒªÌØÊâ´¦Àí
-		//½«¸ÃÈı½ÇĞÎ¿çÔ½µÄxÖµ×÷ÎªdxÒÔÔÚäÖÈ¾Ê±ÌØÊâ´¦Àí
+		//å½“ä¸‰è§’å½¢ä¸‰ä¸ªé¡¶ç‚¹yå€¼ç›¸åŒæ—¶ï¼Œç»å…¸æ‰«æçº¿ç®—æ³•ä¼šä¸æ¸²æŸ“è¿™ä¸ªä¸‰è§’å½¢ï¼Œæ­¤æ—¶éœ€è¦ç‰¹æ®Šå¤„ç†
+		//å°†è¯¥ä¸‰è§’å½¢è·¨è¶Šçš„xå€¼ä½œä¸ºdxä»¥åœ¨æ¸²æŸ“æ—¶ç‰¹æ®Šå¤„ç†
 		if (glm::abs(faceDiff[0]) < EPSILON && glm::abs(faceDiff[1]) < EPSILON) {
 			int minIndex = 0;
 			float minX = face[0].x, maxX = minX;
@@ -237,7 +237,7 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 				continue;
 			}
 			float dx = (face[nextJ].x - face[j].x) / faceDiff[j];
-			//Èôface[j]²»ÊÇÉÏ¶¥µã£¬Ôò½»»»curJÓënextJµÄÖµ¡£Í¬Ê±µ±ÉÏ¶¥µãÎª·Ç¼«ÖµµãÊ±£¬½«ÆäÍùÏÂÒ»ĞĞ
+			//è‹¥face[j]ä¸æ˜¯ä¸Šé¡¶ç‚¹ï¼Œåˆ™äº¤æ¢curJä¸nextJçš„å€¼ã€‚åŒæ—¶å½“ä¸Šé¡¶ç‚¹ä¸ºéæå€¼ç‚¹æ—¶ï¼Œå°†å…¶å¾€ä¸‹ä¸€è¡Œ
 			if (faceDiff[j] < 0) {
 				std::swap(curJ, nextJ);
 			}
@@ -254,7 +254,7 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 }
 
 void ScanlineZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 color) {
-	//½«Èı¸ö¶¥µã¸ù¾İyµÄ´óĞ¡½µĞòÅÅĞò
+	//å°†ä¸‰ä¸ªé¡¶ç‚¹æ ¹æ®yçš„å¤§å°é™åºæ’åº
 	if (face[0].y < face[1].y) {
 		std::swap(face[0], face[1]);
 	}
@@ -273,7 +273,7 @@ void ScanlineZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 color) {
 	float c = (face[1].x - face[0].x) * faceDiff[2] + faceDiff[0] * (face[2].x - face[0].x);
 	float dzx = -a / c, dzy = b / c;
 	if (glm::abs(c) < EPSILON) {
-		//Óë¾­µäÉ¨ÃèÏßËã·¨½¨±íµÄË¼Â·ÏàÍ¬£¬µ±Èı½ÇĞÎÊÇÒ»ÌõÏßÊ±Ö´ĞĞÒÔÏÂ²Ù×÷
+		//ä¸ç»å…¸æ‰«æçº¿ç®—æ³•å»ºè¡¨çš„æ€è·¯ç›¸åŒï¼Œå½“ä¸‰è§’å½¢æ˜¯ä¸€æ¡çº¿æ—¶æ‰§è¡Œä»¥ä¸‹æ“ä½œ
 		int minXIndex = 0, maxXIndex = 0;
 		float minX = face[0].x, maxX = minX;
 		for (int j = 1; j < 3; j++) {
@@ -298,7 +298,7 @@ void ScanlineZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 color) {
 	}
 	float xLeft, xRight, dxleft, dxRight, z;
 	if (isTopFlat) {
-		//Èç¹ûÕâ¸öÈı½ÇĞÎÊÇÉÏÆ½µ×£¬Ôò¸ù¾İ¶¥µãface[0],face[1]µÄ×óÓÒ¹ØÏµ¸³ÖµÏà¹Ø²ÎÊı
+		//å¦‚æœè¿™ä¸ªä¸‰è§’å½¢æ˜¯ä¸Šå¹³åº•ï¼Œåˆ™æ ¹æ®é¡¶ç‚¹face[0],face[1]çš„å·¦å³å…³ç³»èµ‹å€¼ç›¸å…³å‚æ•°
 		if (face[0].x < face[1].x) {
 			xLeft = face[0].x; xRight = face[1].x;
 			dxleft = (face[0].x - face[2].x) / faceDiff[2]; dxRight = (face[2].x - face[1].x) / faceDiff[1];
@@ -309,7 +309,7 @@ void ScanlineZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 color) {
 			z = face[1].z;
 		}
 	} else {
-		//Èç¹ûÕâ¸öÈı½ÇĞÎ²»ÊÇÉÏÆ½µ×£¬Ôò¸ù¾İ±ßface[0]-face[1],face[0]-face[2]µÄ×óÓÒ¹ØÏµ¸³ÖµÏà¹Ø²ÎÊı
+		//å¦‚æœè¿™ä¸ªä¸‰è§’å½¢ä¸æ˜¯ä¸Šå¹³åº•ï¼Œåˆ™æ ¹æ®è¾¹face[0]-face[1],face[0]-face[2]çš„å·¦å³å…³ç³»èµ‹å€¼ç›¸å…³å‚æ•°
 		xLeft = face[0].x; xRight = face[0].x;
 		dxleft = (face[1].x - face[0].x) / faceDiff[0]; dxRight = (face[0].x - face[2].x) / faceDiff[2];
 		if (dxleft > dxRight) {
@@ -320,7 +320,7 @@ void ScanlineZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 color) {
 	}
 	int ymax = static_cast<int>(face[0].y), ymid = static_cast<int>(face[1].y), ymin = static_cast<int>(face[2].y);
 	if (!isTopFlat) {
-		//Èç¹û²»ÊÇÉÏÆ½µ×£¬ÔòÖ´ĞĞÒÔÏÂÑ­»·£¬Ê¹ÓÃÉ¨ÃèÏßµÄË¼ÏëÍê³ÉÉÏ°ë²¿·ÖÈı½ÇĞÎµÄ¹âÕ¤»¯
+		//å¦‚æœä¸æ˜¯ä¸Šå¹³åº•ï¼Œåˆ™æ‰§è¡Œä»¥ä¸‹å¾ªç¯ï¼Œä½¿ç”¨æ‰«æçº¿çš„æ€æƒ³å®Œæˆä¸ŠåŠéƒ¨åˆ†ä¸‰è§’å½¢çš„å…‰æ …åŒ–
 		for (int y = ymax; y >= ymid; y--) {
 			int ixLeft = static_cast<int>(xLeft), ixRight = static_cast<int>(xRight);
 			float tempZ = z + dzx * (ixLeft - xLeft);
@@ -342,9 +342,9 @@ void ScanlineZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 color) {
 		}
 	}
 	if (!isBottomFlat) {
-		//Èç¹û²»ÊÇÏÂÆ½µ×£¬ÔòÖ´ĞĞÒÔÏÂ²Ù×÷£¬Ê¹ÓÃÉ¨ÃèÏßµÄË¼ÏëÍê³ÉÏÂ°ë²¿·ÖÈı½ÇĞÎµÄ¹âÕ¤»¯
+		//å¦‚æœä¸æ˜¯ä¸‹å¹³åº•ï¼Œåˆ™æ‰§è¡Œä»¥ä¸‹æ“ä½œï¼Œä½¿ç”¨æ‰«æçº¿çš„æ€æƒ³å®Œæˆä¸‹åŠéƒ¨åˆ†ä¸‰è§’å½¢çš„å…‰æ …åŒ–
 		if (!isTopFlat) {
-			//Èç¹û²»ÊÇÉÏÆ½µ×£¬ÔòĞèÒª¸ù¾İ±ßface[0]-face[2]Óë±ßface[1]-face[2]µÄ×óÓÒ¹ØÏµ¸üĞÂÏà¹Ø²ÎÊı£¬Í¬Ê±¶ÔÓÚ·Ç¼«ÖµµãÒ²Òª½«É¨ÃèÏßÍùÏÂÒ»ĞĞ
+			//å¦‚æœä¸æ˜¯ä¸Šå¹³åº•ï¼Œåˆ™éœ€è¦æ ¹æ®è¾¹face[0]-face[2]ä¸è¾¹face[1]-face[2]çš„å·¦å³å…³ç³»æ›´æ–°ç›¸å…³å‚æ•°ï¼ŒåŒæ—¶å¯¹äºéæå€¼ç‚¹ä¹Ÿè¦å°†æ‰«æçº¿å¾€ä¸‹ä¸€è¡Œ
 			if (isLongAtLeft) {
 				dxRight = (face[2].x - face[1].x) / faceDiff[1];
 				xRight = face[1].x + dxRight;
@@ -376,7 +376,7 @@ void ScanlineZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 color) {
 			z += dxleft * dzx + dzy;
 		}
 	} else if (isTopFlat) {
-		//µ±Èı½ÇĞÎ¼ÈÊÇÉÏÆ½µ×ÓÖÊÇÏÂÆ½µ×Ê±£¬¼´Èı½ÇĞÎÊÇÒ»ÌõÆ½ĞĞÓÚyÖáµÄÏßÊ±£¬Ö±½Ó´Ó×óµ½ÓÒ¹âÕ¤»¯Èı½ÇĞÎ
+		//å½“ä¸‰è§’å½¢æ—¢æ˜¯ä¸Šå¹³åº•åˆæ˜¯ä¸‹å¹³åº•æ—¶ï¼Œå³ä¸‰è§’å½¢æ˜¯ä¸€æ¡å¹³è¡Œäºyè½´çš„çº¿æ—¶ï¼Œç›´æ¥ä»å·¦åˆ°å³å…‰æ …åŒ–ä¸‰è§’å½¢
 		int ixLeft = static_cast<int>(glm::min(face[0].x, glm::min(face[1].x, face[2].x)));
 		int ixRihgt = static_cast<int>(glm::max(face[0].x, glm::max(face[1].x, face[2].x)));
 		z += dzx * (ixLeft - xLeft);

@@ -28,7 +28,7 @@ BasicZBuffer::~BasicZBuffer() {
 }
 
 void BasicZBuffer::showInfo() const {
-    std::cout << "BasicZBuffer: äÖÈ¾Ê±¼äÎª" << m_renderTime.count() << "ms" << std::endl;
+    std::cout << "BasicZBuffer: æ¸²æŸ“æ—¶é—´ä¸º" << m_renderTime.count() << "ms" << std::endl;
 }
 
 void BasicZBuffer::render() const {
@@ -55,18 +55,18 @@ void BasicZBuffer::rasterizeScene(Model& model, Scene& scene) {
 
 void BasicZBuffer::rasterizeTriangle(glm::vec3* vertices, glm::vec3 color) {
     int xmin = m_width, xmax = 0, ymin = m_height, ymax = 0;
-    //¼ÆËãÈı½ÇĞÎµÄ°üÎ§ºĞ
+    //è®¡ç®—ä¸‰è§’å½¢çš„åŒ…å›´ç›’
     for (int i = 0; i < 3; i++) {
         xmin = glm::min(xmin, static_cast<int>(vertices[i][0]));
         xmax = glm::max(xmax, static_cast<int>(vertices[i][0]));
         ymin = glm::min(ymin, static_cast<int>(vertices[i][1]));
         ymax = glm::max(ymax, static_cast<int>(vertices[i][1]));
     }
-    //Öğ¸öÅĞ¶Ï°üÎ§ºĞÄÚµÄÏñËØÊÇ·ñÎ»ÓÚÈı½ÇĞÎÄÚ£¬²¢½øĞĞz²âÊÔ
+    //é€ä¸ªåˆ¤æ–­åŒ…å›´ç›’å†…çš„åƒç´ æ˜¯å¦ä½äºä¸‰è§’å½¢å†…ï¼Œå¹¶è¿›è¡Œzæµ‹è¯•
     for (int x = xmin; x <= xmax; x++) {
         for (int y = ymin; y <= ymax; y++) {
             glm::vec3 baryCentricCoordinate = baryCentric(vertices, glm::vec2(x, y));
-            //ÖØĞÄ×ø±êÈ«²»Ğ¡ÓÚ0²ÅÄÜËµÃ÷¸ÃÏñËØÔÚÈı½ÇĞÎÄÚ
+            //é‡å¿ƒåæ ‡å…¨ä¸å°äº0æ‰èƒ½è¯´æ˜è¯¥åƒç´ åœ¨ä¸‰è§’å½¢å†…
             if (baryCentricCoordinate[0] < 0 || baryCentricCoordinate[1] < 0 || baryCentricCoordinate[2] < 0) {
                 continue;
             }
@@ -89,7 +89,7 @@ void BasicZBuffer::rasterizeTriangle(glm::vec3* vertices, glm::vec3 color) {
 
 glm::vec3 BasicZBuffer::baryCentric(glm::vec3* vertices, glm::vec2 point) {
     float w = (vertices[1][0] - vertices[0][0]) * (vertices[2][1] - vertices[0][1]) - (vertices[1][1] - vertices[0][1]) * (vertices[2][0] - vertices[0][0]);
-    //Èı½ÇĞÎÃæ»ıÎª0£¬½«ÏñËØµãµ±×öµÚ1¸ö¶¥µã´¦Àí
+    //ä¸‰è§’å½¢é¢ç§¯ä¸º0ï¼Œå°†åƒç´ ç‚¹å½“åšç¬¬1ä¸ªé¡¶ç‚¹å¤„ç†
 	if (glm::abs(w) < EPSILON) {
         return { 1, 0, 0 };
     }

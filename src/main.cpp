@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include "model.hpp"
 #include "scene.hpp"
 #include "basicZBuffer.hpp"

@@ -10,11 +10,11 @@
 
 #define EPSILON 1e-5
 
-/*! @brief »ù´¡²ã´Îz-BufferÀà
+/*! @brief åŸºç¡€å±‚æ¬¡z-Bufferç±»
  *
- *  Ê¹ÓÃ¼òµ¥Ä£Ê½µÄ²ã´Îz-Buffer½øĞĞ¹âÕ¤»¯£¬¼´½öÊ¹ÓÃËÄ²æÊ÷¶ø²»½øĞĞÔ¤ÏÈÅÅĞò¡£
- *	ÔÚ¹âÕ¤»¯Èı½ÇĞÎÊ±²ÉÓÃÉ¨ÃèÏßËã·¨µÄË¼Ïë¡£
- *	½öÖ§³ÖÈ«ÊÇÈı½ÇĞÎµÄÄ£ĞÍ
+ *  ä½¿ç”¨ç®€å•æ¨¡å¼çš„å±‚æ¬¡z-Bufferè¿›è¡Œå…‰æ …åŒ–ï¼Œå³ä»…ä½¿ç”¨å››å‰æ ‘è€Œä¸è¿›è¡Œé¢„å…ˆæ’åºã€‚
+ *	åœ¨å…‰æ …åŒ–ä¸‰è§’å½¢æ—¶é‡‡ç”¨æ‰«æçº¿ç®—æ³•çš„æ€æƒ³ã€‚
+ *	ä»…æ”¯æŒå…¨æ˜¯ä¸‰è§’å½¢çš„æ¨¡å‹
  *
  */
 class BasicHierarchicalZBuffer
@@ -23,59 +23,59 @@ public:
 	BasicHierarchicalZBuffer(int width, int height);
 	~BasicHierarchicalZBuffer();
 
-	/*! @brief ½«×îÖÕ½á¹ûĞ´ÈëÖ¸¶¨µÄpngÍ¼Æ¬
+	/*! @brief å°†æœ€ç»ˆç»“æœå†™å…¥æŒ‡å®šçš„pngå›¾ç‰‡
 	 */
 	void render() const;
-	/*! @brief ½«³¡¾°¹âÕ¤»¯
-	 *  @param model: Ä£ĞÍÀà
-	 *  @param scene: ³¡¾°Àà
+	/*! @brief å°†åœºæ™¯å…‰æ …åŒ–
+	 *  @param model: æ¨¡å‹ç±»
+	 *  @param scene: åœºæ™¯ç±»
 	 */
 	void rasterizeScene(Model &model, Scene &scene);
-	/*! @brief Õ¹Ê¾½¨Ê÷Ê±¼ä¡¢äÖÈ¾Ê±¼äºÍ×ÜÊ±¼ä
+	/*! @brief å±•ç¤ºå»ºæ ‘æ—¶é—´ã€æ¸²æŸ“æ—¶é—´å’Œæ€»æ—¶é—´
 	 */
 	void showInfo() const;
 private:
-	/*! @brief ËÄ²æÊ÷µÄ¸ù½Úµã
+	/*! @brief å››å‰æ ‘çš„æ ¹èŠ‚ç‚¹
 	 */
 	QuadNode* m_quadTree;
-	/*! @brief Ã¿¸öÏñËØËù¶ÔÓ¦µÄËÄ²æÊ÷½ÚµãµÄÊı×é
+	/*! @brief æ¯ä¸ªåƒç´ æ‰€å¯¹åº”çš„å››å‰æ ‘èŠ‚ç‚¹çš„æ•°ç»„
 	 */
 	QuadNode** m_pixelQuadNodes;
 
-	/*! @brief äÖÈ¾´°¿Ú¿í¶È¡¢¸ß¶È
+	/*! @brief æ¸²æŸ“çª—å£å®½åº¦ã€é«˜åº¦
 	 */
 	int m_width, m_height;
-	/*! @brief ×îÖÕÍ¼ÏñµÄRGBAÊı¾İ£¬Ã¿4Î»´ú±íÒ»¸öÏñËØµÄRGBA
+	/*! @brief æœ€ç»ˆå›¾åƒçš„RGBAæ•°æ®ï¼Œæ¯4ä½ä»£è¡¨ä¸€ä¸ªåƒç´ çš„RGBA
 	 */
 	unsigned char* m_image;
-	/*! @brief äÖÈ¾µÄÄ£ĞÍµÄÃû³Æ
+	/*! @brief æ¸²æŸ“çš„æ¨¡å‹çš„åç§°
 	 */
 	std::string m_modelName;
-	/*! @brief äÖÈ¾ËùĞèÊ±¼ä
+	/*! @brief æ¸²æŸ“æ‰€éœ€æ—¶é—´
 	 */
 	std::chrono::duration<double, std::milli> m_renderTime;
-	/*! @brief ¹¹½¨ËÄ²æÊ÷ËùĞèÊ±¼ä
+	/*! @brief æ„å»ºå››å‰æ ‘æ‰€éœ€æ—¶é—´
 	 */
 	std::chrono::duration<double, std::milli> m_buildTreeTime;
 
-	/*! @brief ¹¹½¨³õÊ¼µÄËÄ²æÊ÷
+	/*! @brief æ„å»ºåˆå§‹çš„å››å‰æ ‘
 	 */
 	void buildQuadTree();
-	/*! @brief ¹âÕ¤»¯Èı½ÇĞÎ
-	 *  @param face: Èı½ÇĞÎµÄ¶¥µãÊı×é
-	 *  @param color: Èı½ÇĞÎµÄÑÕÉ«
+	/*! @brief å…‰æ …åŒ–ä¸‰è§’å½¢
+	 *  @param face: ä¸‰è§’å½¢çš„é¡¶ç‚¹æ•°ç»„
+	 *  @param color: ä¸‰è§’å½¢çš„é¢œè‰²
 	 */
 	void rasterizeTriangle(glm::vec3* face, glm::vec3 color);
-	/*! @brief ¸üĞÂËÄ²æÊ÷
+	/*! @brief æ›´æ–°å››å‰æ ‘
 	 *
-	 *  ¸ù¾İ¸ø¶¨µÄËÄ²æÊ÷½ÚµãÏòÉÏ¸üĞÂÉî¶ÈÖµ
+	 *  æ ¹æ®ç»™å®šçš„å››å‰æ ‘èŠ‚ç‚¹å‘ä¸Šæ›´æ–°æ·±åº¦å€¼
 	 *
-	 *  @param node: Òª¸üĞÂµÄËÄ²æÊ÷½Úµã
+	 *  @param node: è¦æ›´æ–°çš„å››å‰æ ‘èŠ‚ç‚¹
 	 */
 	void update(QuadNode* node);
-	/*! @brief ÅĞ¶ÏÈı½ÇĞÎÊÇ·ñĞèÒª¹âÕ¤»¯
-	 *  @param vertices: Èı½ÇĞÎµÄ¶¥µãÊı×é
-	 *	@return ÊÇ·ñĞèÒª¹âÕ¤»¯Èı½ÇĞÎ
+	/*! @brief åˆ¤æ–­ä¸‰è§’å½¢æ˜¯å¦éœ€è¦å…‰æ …åŒ–
+	 *  @param vertices: ä¸‰è§’å½¢çš„é¡¶ç‚¹æ•°ç»„
+	 *	@return æ˜¯å¦éœ€è¦å…‰æ …åŒ–ä¸‰è§’å½¢
 	 */
 	bool isNeedRasterize(glm::vec3* vertices) const;
 };

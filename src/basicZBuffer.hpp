@@ -8,10 +8,10 @@
 #include "scene.hpp"
 
 #define EPSILON 1e-5
-/*! @brief »ù´¡z-BufferÀà
+/*! @brief åŸºç¡€z-Bufferç±»
  *
- *  Ê¹ÓÃ×î»ù´¡µÄz-Buffer½øĞĞ¹âÕ¤»¯£¬¼´¶ÔÃ¿¸öÈı½ÇĞÎµÄ°üÎ§ºĞÄÚµÄÏñËØÖğ¸öÅĞ¶Ï£¬
- *  ½öÖ§³ÖÈ«ÊÇÈı½ÇĞÎµÄÄ£ĞÍ
+ *  ä½¿ç”¨æœ€åŸºç¡€çš„z-Bufferè¿›è¡Œå…‰æ …åŒ–ï¼Œå³å¯¹æ¯ä¸ªä¸‰è§’å½¢çš„åŒ…å›´ç›’å†…çš„åƒç´ é€ä¸ªåˆ¤æ–­ï¼Œ
+ *  ä»…æ”¯æŒå…¨æ˜¯ä¸‰è§’å½¢çš„æ¨¡å‹
  *
  */
 class BasicZBuffer {
@@ -19,43 +19,43 @@ public:
 	BasicZBuffer(int width, int height);
 	~BasicZBuffer();
 
-	/*! @brief ½«×îÖÕ½á¹ûĞ´ÈëÖ¸¶¨µÄpngÍ¼Æ¬
+	/*! @brief å°†æœ€ç»ˆç»“æœå†™å…¥æŒ‡å®šçš„pngå›¾ç‰‡
 	 */
 	void render() const;
-	/*! @brief ½«³¡¾°¹âÕ¤»¯
-	 *  @param model: Ä£ĞÍÀà
-	 *  @param scene: ³¡¾°Àà
+	/*! @brief å°†åœºæ™¯å…‰æ …åŒ–
+	 *  @param model: æ¨¡å‹ç±»
+	 *  @param scene: åœºæ™¯ç±»
 	 */
 	void rasterizeScene(Model& model, Scene& scene);
-	/*! @brief Õ¹Ê¾äÖÈ¾Ê±¼ä
+	/*! @brief å±•ç¤ºæ¸²æŸ“æ—¶é—´
 	 */
 	void showInfo() const;
 private:
-	/*! @brief äÖÈ¾´°¿ÚµÄ¿í¶ÈÓë¸ß¶È
+	/*! @brief æ¸²æŸ“çª—å£çš„å®½åº¦ä¸é«˜åº¦
 	 */
 	int m_width, m_height;
 	/*! @brief z-buffer
 	 */
 	float* m_zBuffer;
-	/*! @brief ×îÖÕÍ¼ÏñµÄRGBAÊı¾İ£¬Ã¿4Î»´ú±íÒ»¸öÏñËØµÄRGBA
+	/*! @brief æœ€ç»ˆå›¾åƒçš„RGBAæ•°æ®ï¼Œæ¯4ä½ä»£è¡¨ä¸€ä¸ªåƒç´ çš„RGBA
 	 */
 	unsigned char* m_image;
-	/*! @brief äÖÈ¾µÄÄ£ĞÍµÄÃû³Æ
+	/*! @brief æ¸²æŸ“çš„æ¨¡å‹çš„åç§°
 	 */
 	std::string m_modelName;
-	/*! @brief äÖÈ¾ËùĞèÊ±¼ä
+	/*! @brief æ¸²æŸ“æ‰€éœ€æ—¶é—´
 	 */
 	std::chrono::duration<double, std::milli> m_renderTime;
 
-	/*! @brief ½«Èı½ÇĞÎ¹âÕ¤»¯
-	 *  @param vertices: ½øĞĞÁËMVP±ä»»ºóµÄÈı½ÇĞÎµÄ3¸ö¶¥µãµÄ×ø±ê
-	 *  @param color: ¸ÃÈı½ÇĞÎµÄÑÕÉ«
+	/*! @brief å°†ä¸‰è§’å½¢å…‰æ …åŒ–
+	 *  @param vertices: è¿›è¡Œäº†MVPå˜æ¢åçš„ä¸‰è§’å½¢çš„3ä¸ªé¡¶ç‚¹çš„åæ ‡
+	 *  @param color: è¯¥ä¸‰è§’å½¢çš„é¢œè‰²
 	 */
 	void rasterizeTriangle(glm::vec3* vertices, glm::vec3 color);
-	/*! @brief ¼ÆËãÒ»¸öµãÔÚÈı½ÇĞÎÖĞµÄÖØĞÄ×ø±ê
-	 *  @param vertices: ½øĞĞÁËMVP±ä»»ºóµÄÈı½ÇĞÎµÄ3¸ö¶¥µãµÄ×ø±ê
-	 *  @param point: ĞèÒª¼ÆËãÖØĞÄ×ø±êµÄµãµÄ×ø±ê
-	 *  @return ¸ÃµãµÄÖØĞÄ×ø±ê
+	/*! @brief è®¡ç®—ä¸€ä¸ªç‚¹åœ¨ä¸‰è§’å½¢ä¸­çš„é‡å¿ƒåæ ‡
+	 *  @param vertices: è¿›è¡Œäº†MVPå˜æ¢åçš„ä¸‰è§’å½¢çš„3ä¸ªé¡¶ç‚¹çš„åæ ‡
+	 *  @param point: éœ€è¦è®¡ç®—é‡å¿ƒåæ ‡çš„ç‚¹çš„åæ ‡
+	 *  @return è¯¥ç‚¹çš„é‡å¿ƒåæ ‡
 	 */
 	glm::vec3 baryCentric(glm::vec3* vertices, glm::vec2 point);
 };

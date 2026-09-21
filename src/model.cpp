@@ -70,7 +70,7 @@ void Model::loadModel(std::string modelPath) {
 			m_faceNum++;
 		}
 	}
-	//将模型调整至中间位置
+	//灏嗘ā鍨嬭皟鏁磋嚦涓棿浣嶇疆
 	float midX = (maxX + minX) / 2, midY = (maxY + minY) / 2, midZ = (maxZ + minZ) / 2;
 	for (auto it = m_vertices.begin(); it != m_vertices.end(); ++it) {
 		it->x -= midX;
@@ -78,7 +78,7 @@ void Model::loadModel(std::string modelPath) {
 		it->z -= midZ;
 		maxData = glm::max(glm::max(maxData, glm::abs(it->x)), glm::max(glm::abs(it->y), glm::abs(it->z)));
 	}
-	//将模型的坐标调整至[-1,1]^3
+	//灏嗘ā鍨嬬殑鍧愭爣璋冩暣鑷砙-1,1]^3
 	for (auto it = m_vertices.begin(); it != m_vertices.end(); ++it) {
 		it->x /= maxData;
 		it->y /= maxData;

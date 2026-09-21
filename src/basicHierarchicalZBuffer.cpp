@@ -24,7 +24,7 @@ BasicHierarchicalZBuffer::~BasicHierarchicalZBuffer() {
 }
 
 void BasicHierarchicalZBuffer::showInfo() const {
-    std::cout << "BasicHierarchicalZBuffer: ½¨Ê÷Ê±¼äÎª" << m_buildTreeTime.count() << "ms, " << "äÖÈ¾Ê±¼äÎª" << m_renderTime.count() << "ms, " << "×ÜÊ±¼äÎª" << (m_buildTreeTime + m_renderTime).count() << "ms" << std::endl;
+    std::cout << "BasicHierarchicalZBuffer: å»ºæ ‘æ—¶é—´ä¸º" << m_buildTreeTime.count() << "ms, " << "æ¸²æŸ“æ—¶é—´ä¸º" << m_renderTime.count() << "ms, " << "æ€»æ—¶é—´ä¸º" << (m_buildTreeTime + m_renderTime).count() << "ms" << std::endl;
 }
 
 void BasicHierarchicalZBuffer::render() const {
@@ -60,7 +60,7 @@ void BasicHierarchicalZBuffer::rasterizeScene(Model& model, Scene& scene) {
 }
 
 void BasicHierarchicalZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 color) {
-    //½«Èı¸ö¶¥µã¸ù¾İyµÄ´óĞ¡½µĞòÅÅĞò
+    //å°†ä¸‰ä¸ªé¡¶ç‚¹æ ¹æ®yçš„å¤§å°é™åºæ’åº
 	if (face[0].y < face[1].y) {
         std::swap(face[0], face[1]);
     }
@@ -79,7 +79,7 @@ void BasicHierarchicalZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 colo
     float c = (face[1].x - face[0].x) * faceDiff[2] + faceDiff[0] * (face[2].x - face[0].x);
     float dzx = -a / c, dzy = b / c;
     if (glm::abs(c) < EPSILON) {
-        //Óë¾­µäÉ¨ÃèÏßËã·¨½¨±íµÄË¼Â·ÏàÍ¬£¬µ±Èı½ÇĞÎÊÇÒ»ÌõÏßÊ±Ö´ĞĞÒÔÏÂ²Ù×÷
+        //ä¸ç»å…¸æ‰«æçº¿ç®—æ³•å»ºè¡¨çš„æ€è·¯ç›¸åŒï¼Œå½“ä¸‰è§’å½¢æ˜¯ä¸€æ¡çº¿æ—¶æ‰§è¡Œä»¥ä¸‹æ“ä½œ
         int minXIndex = 0, maxXIndex = 0;
         float minX = face[0].x, maxX = minX;
         for (int j = 1; j < 3; j++) {
@@ -104,7 +104,7 @@ void BasicHierarchicalZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 colo
     }
     float xLeft, xRight, dxleft, dxRight, z;
     if (isTopFlat) {
-        //Èç¹ûÕâ¸öÈı½ÇĞÎÊÇÉÏÆ½µ×£¬Ôò¸ù¾İ¶¥µãface[0],face[1]µÄ×óÓÒ¹ØÏµ¸³ÖµÏà¹Ø²ÎÊı
+        //å¦‚æœè¿™ä¸ªä¸‰è§’å½¢æ˜¯ä¸Šå¹³åº•ï¼Œåˆ™æ ¹æ®é¡¶ç‚¹face[0],face[1]çš„å·¦å³å…³ç³»èµ‹å€¼ç›¸å…³å‚æ•°
         if (face[0].x < face[1].x) {
             xLeft = face[0].x; xRight = face[1].x;
             dxleft = (face[0].x - face[2].x) / faceDiff[2]; dxRight = (face[2].x - face[1].x) / faceDiff[1];
@@ -115,7 +115,7 @@ void BasicHierarchicalZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 colo
             z = face[1].z;
         }
     }else {
-        //Èç¹ûÕâ¸öÈı½ÇĞÎ²»ÊÇÉÏÆ½µ×£¬Ôò¸ù¾İ±ßface[0]-face[1],face[0]-face[2]µÄ×óÓÒ¹ØÏµ¸³ÖµÏà¹Ø²ÎÊı
+        //å¦‚æœè¿™ä¸ªä¸‰è§’å½¢ä¸æ˜¯ä¸Šå¹³åº•ï¼Œåˆ™æ ¹æ®è¾¹face[0]-face[1],face[0]-face[2]çš„å·¦å³å…³ç³»èµ‹å€¼ç›¸å…³å‚æ•°
         xLeft = face[0].x; xRight = face[0].x;
         dxleft = (face[1].x - face[0].x) / faceDiff[0]; dxRight = (face[0].x - face[2].x) / faceDiff[2];
         if (dxleft > dxRight) {
@@ -126,7 +126,7 @@ void BasicHierarchicalZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 colo
     }
     int ymax = static_cast<int>(face[0].y), ymid = static_cast<int>(face[1].y), ymin = static_cast<int>(face[2].y);
     if (!isTopFlat) {
-        //Èç¹û²»ÊÇÉÏÆ½µ×£¬ÔòÖ´ĞĞÒÔÏÂÑ­»·£¬Ê¹ÓÃÉ¨ÃèÏßµÄË¼ÏëÍê³ÉÉÏ°ë²¿·ÖÈı½ÇĞÎµÄ¹âÕ¤»¯
+        //å¦‚æœä¸æ˜¯ä¸Šå¹³åº•ï¼Œåˆ™æ‰§è¡Œä»¥ä¸‹å¾ªç¯ï¼Œä½¿ç”¨æ‰«æçº¿çš„æ€æƒ³å®Œæˆä¸ŠåŠéƒ¨åˆ†ä¸‰è§’å½¢çš„å…‰æ …åŒ–
 	    for (int y = ymax; y >= ymid; y--) {
             int ixLeft = static_cast<int>(xLeft), ixRight = static_cast<int>(xRight);
             float tempZ = z + dzx * (ixLeft - xLeft);
@@ -149,9 +149,9 @@ void BasicHierarchicalZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 colo
 	    }
     }
     if (!isBottomFlat) {
-        //Èç¹û²»ÊÇÏÂÆ½µ×£¬ÔòÖ´ĞĞÒÔÏÂ²Ù×÷£¬Ê¹ÓÃÉ¨ÃèÏßµÄË¼ÏëÍê³ÉÏÂ°ë²¿·ÖÈı½ÇĞÎµÄ¹âÕ¤»¯
+        //å¦‚æœä¸æ˜¯ä¸‹å¹³åº•ï¼Œåˆ™æ‰§è¡Œä»¥ä¸‹æ“ä½œï¼Œä½¿ç”¨æ‰«æçº¿çš„æ€æƒ³å®Œæˆä¸‹åŠéƒ¨åˆ†ä¸‰è§’å½¢çš„å…‰æ …åŒ–
         if (!isTopFlat) {
-            //Èç¹û²»ÊÇÉÏÆ½µ×£¬ÔòĞèÒª¸ù¾İ±ßface[0]-face[2]Óë±ßface[1]-face[2]µÄ×óÓÒ¹ØÏµ¸üĞÂÏà¹Ø²ÎÊı£¬Í¬Ê±¶ÔÓÚ·Ç¼«ÖµµãÒ²Òª½«É¨ÃèÏßÍùÏÂÒ»ĞĞ
+            //å¦‚æœä¸æ˜¯ä¸Šå¹³åº•ï¼Œåˆ™éœ€è¦æ ¹æ®è¾¹face[0]-face[2]ä¸è¾¹face[1]-face[2]çš„å·¦å³å…³ç³»æ›´æ–°ç›¸å…³å‚æ•°ï¼ŒåŒæ—¶å¯¹äºéæå€¼ç‚¹ä¹Ÿè¦å°†æ‰«æçº¿å¾€ä¸‹ä¸€è¡Œ
 	        if (isLongAtLeft) {
 	            dxRight = (face[2].x - face[1].x) / faceDiff[1];
 	            xRight = face[1].x + dxRight;
@@ -183,7 +183,7 @@ void BasicHierarchicalZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 colo
             z += dxleft * dzx + dzy;
 	    }
     }else if (isTopFlat) {
-        //µ±Èı½ÇĞÎ¼ÈÊÇÉÏÆ½µ×ÓÖÊÇÏÂÆ½µ×Ê±£¬¼´Èı½ÇĞÎÊÇÒ»ÌõÆ½ĞĞÓÚyÖáµÄÏßÊ±£¬Ö±½Ó´Ó×óµ½ÓÒ¹âÕ¤»¯Èı½ÇĞÎ
+        //å½“ä¸‰è§’å½¢æ—¢æ˜¯ä¸Šå¹³åº•åˆæ˜¯ä¸‹å¹³åº•æ—¶ï¼Œå³ä¸‰è§’å½¢æ˜¯ä¸€æ¡å¹³è¡Œäºyè½´çš„çº¿æ—¶ï¼Œç›´æ¥ä»å·¦åˆ°å³å…‰æ …åŒ–ä¸‰è§’å½¢
         int ixLeft = static_cast<int>(glm::min(face[0].x, glm::min(face[1].x, face[2].x)));
         int ixRihgt = static_cast<int>(glm::max(face[0].x, glm::max(face[1].x, face[2].x)));
         z += dzx * (ixLeft - xLeft);
@@ -219,7 +219,7 @@ void BasicHierarchicalZBuffer::buildQuadTree() {
         for (int i = 0; i < 4; i++) {
             auto child = node->children[i];
             if (child != nullptr) {
-                //Èô×Ó½Úµã²»ÎªÒ¶×Ó½Úµã£¬ÔòÑ¹ÈëÕ»ÖĞ£¬·ñÔò¸³Öµ¶ÔÓ¦µÄÏñËØ½Úµã
+                //è‹¥å­èŠ‚ç‚¹ä¸ä¸ºå¶å­èŠ‚ç‚¹ï¼Œåˆ™å‹å…¥æ ˆä¸­ï¼Œå¦åˆ™èµ‹å€¼å¯¹åº”çš„åƒç´ èŠ‚ç‚¹
                 if (child->left == child->right - 1 && child->bottom == child->top - 1) {
                     m_pixelQuadNodes[child->bottom * m_width + child->left] = node->children[i];
                     child->children[0] = nullptr;
@@ -239,14 +239,14 @@ void BasicHierarchicalZBuffer::update(QuadNode* node) {
     QuadNode* tempNode = node;
     while (tempNode != nullptr) {
         maxDepth = minFloat;
-        //¼ÆËãµ±Ç°½ÚµãµÄ4¸ö×Ó½ÚµãµÄ×î´óµÄÉî¶ÈÖµ
+        //è®¡ç®—å½“å‰èŠ‚ç‚¹çš„4ä¸ªå­èŠ‚ç‚¹çš„æœ€å¤§çš„æ·±åº¦å€¼
         for (int i = 0; i < 4; i++) {
             if (tempNode->children[i] != nullptr) {
                 maxDepth = glm::max(maxDepth, tempNode->children[i]->depth);
             }
         }
         if (tempNode->depth - maxDepth > EPSILON) {
-            //Èç¹û×Ó½ÚµãµÄ×î´óÉî¶ÈÖµĞ¡ÓÚµ±Ç°½ÚµãµÄ×î´óÉî¶ÈÖµ£¬Ôò¸üĞÂ´Ë½ÚµãÒÔ¼°¸¸½Úµã
+            //å¦‚æœå­èŠ‚ç‚¹çš„æœ€å¤§æ·±åº¦å€¼å°äºå½“å‰èŠ‚ç‚¹çš„æœ€å¤§æ·±åº¦å€¼ï¼Œåˆ™æ›´æ–°æ­¤èŠ‚ç‚¹ä»¥åŠçˆ¶èŠ‚ç‚¹
             tempNode->depth = maxDepth;
         	tempNode = tempNode->parent;
         }else{
@@ -260,7 +260,7 @@ bool BasicHierarchicalZBuffer::isNeedRasterize(glm::vec3* vertices) const {
     QuadNode* node1 = m_pixelQuadNodes[static_cast<int>(vertices[1].y) * m_width + static_cast<int>(vertices[1].x)];
     QuadNode* node2 = m_pixelQuadNodes[static_cast<int>(vertices[2].y) * m_width + static_cast<int>(vertices[2].x)];
     float z = glm::min(glm::abs(vertices[0].z), glm::min(glm::abs(vertices[1].z), glm::abs(vertices[2].z)));
-    //²éÕÒ¿ÉÒÔ¸²¸ÇÈı½ÇĞÎµÄËÄ²æÊ÷½Úµã£¬±¾ÖÊÊÇ²éÕÒÏñËØ½ÚµãµÄ¹«¹²×æÏÈ
+    //æŸ¥æ‰¾å¯ä»¥è¦†ç›–ä¸‰è§’å½¢çš„å››å‰æ ‘èŠ‚ç‚¹ï¼Œæœ¬è´¨æ˜¯æŸ¥æ‰¾åƒç´ èŠ‚ç‚¹çš„å…¬å…±ç¥–å…ˆ
 	while (node0->level > node1->level) {
         node0 = node0->parent;
     }
@@ -284,6 +284,6 @@ bool BasicHierarchicalZBuffer::isNeedRasterize(glm::vec3* vertices) const {
         node1 = node1->parent;
         node2 = node2->parent;
     }
-    //Èç¹ûÈı½ÇĞÎ×îĞ¡µÄÉî¶ÈÖµĞ¡ÓÚËÄ²æÊ÷½ÚµãµÄÉî¶ÈÖµ£¬ÔòĞèÒª¹âÕ¤»¯
+    //å¦‚æœä¸‰è§’å½¢æœ€å°çš„æ·±åº¦å€¼å°äºå››å‰æ ‘èŠ‚ç‚¹çš„æ·±åº¦å€¼ï¼Œåˆ™éœ€è¦å…‰æ …åŒ–
     return z < node0->depth;
 }

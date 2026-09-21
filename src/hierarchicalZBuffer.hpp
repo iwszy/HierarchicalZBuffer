@@ -12,19 +12,19 @@ constexpr auto MAX_TRIANGLE = 20;
 
 #define EPSILON 1e-5
 
-/*! @brief BVH½Úµã
+/*! @brief BVHèŠ‚ç‚¹
  *
- *  left: ×ó×Ó½Úµã
+ *  left: å·¦å­èŠ‚ç‚¹
  *
- *	right: ÓÒ×Ó½Úµã
+ *	right: å³å­èŠ‚ç‚¹
  *
- *	triangles: ÈôÎª·ÇÒ¶×Ó½Úµã£¬ÔòÎª¿Õ£»·ñÔò£¬Æä±íÊ¾¸ÃÒ¶×Ó½áµã°üº¬µÄÈı½ÇĞÎµÄID
+ *	triangles: è‹¥ä¸ºéå¶å­èŠ‚ç‚¹ï¼Œåˆ™ä¸ºç©ºï¼›å¦åˆ™ï¼Œå…¶è¡¨ç¤ºè¯¥å¶å­ç»“ç‚¹åŒ…å«çš„ä¸‰è§’å½¢çš„ID
  *
- *	xmin, xmax: ¸Ã½Úµã°üÎ§ºĞxÖá·½ÏòÉÏµÄ×îĞ¡Öµ¡¢×î´óÖµ
+ *	xmin, xmax: è¯¥èŠ‚ç‚¹åŒ…å›´ç›’xè½´æ–¹å‘ä¸Šçš„æœ€å°å€¼ã€æœ€å¤§å€¼
  *
- *	ymin, ymax: ¸Ã½Úµã°üÎ§ºĞyÖá·½ÏòÉÏµÄ×îĞ¡Öµ¡¢×î´óÖµ
+ *	ymin, ymax: è¯¥èŠ‚ç‚¹åŒ…å›´ç›’yè½´æ–¹å‘ä¸Šçš„æœ€å°å€¼ã€æœ€å¤§å€¼
  *
- *	zmin, zmax: ¸Ã½Úµã°üÎ§ºĞzÖá·½ÏòÉÏµÄ×îĞ¡Öµ¡¢×î´óÖµ
+ *	zmin, zmax: è¯¥èŠ‚ç‚¹åŒ…å›´ç›’zè½´æ–¹å‘ä¸Šçš„æœ€å°å€¼ã€æœ€å¤§å€¼
  *
  */
 struct BVHNode {
@@ -32,7 +32,7 @@ struct BVHNode {
 	std::vector<int> triangles;
 	float xmin, xmax, ymin, ymax, zmin, zmax;
 
-	/*! @brief µİ¹éÉ¾³ıBVH½Úµã
+	/*! @brief é€’å½’åˆ é™¤BVHèŠ‚ç‚¹
 	 */
 	void free() const{
 		if (left != nullptr) {
@@ -43,10 +43,10 @@ struct BVHNode {
 	}
 };
 
-/*! @brief ²ã´Îz-BufferÀà
+/*! @brief å±‚æ¬¡z-Bufferç±»
  *
- *  Ê¹ÓÃÍêÕûÄ£Ê½µÄ²ã´Îz-Buffer½øĞĞ¹âÕ¤»¯£¬¼´Ê¹ÓÃËÄ²æÊ÷µÄÍ¬Ê±ÓÃBVHÔ¤ÅÅĞò£¬
- *	½öÖ§³ÖÈ«ÊÇÈı½ÇĞÎµÄÄ£ĞÍ
+ *  ä½¿ç”¨å®Œæ•´æ¨¡å¼çš„å±‚æ¬¡z-Bufferè¿›è¡Œå…‰æ …åŒ–ï¼Œå³ä½¿ç”¨å››å‰æ ‘çš„åŒæ—¶ç”¨BVHé¢„æ’åºï¼Œ
+ *	ä»…æ”¯æŒå…¨æ˜¯ä¸‰è§’å½¢çš„æ¨¡å‹
  *
  */
 class HierarchicalZBuffer
@@ -55,102 +55,102 @@ public:
 	HierarchicalZBuffer(int width, int height);
 	~HierarchicalZBuffer();
 
-	/*! @brief ½«×îÖÕ½á¹ûĞ´ÈëÖ¸¶¨µÄpngÍ¼Æ¬
+	/*! @brief å°†æœ€ç»ˆç»“æœå†™å…¥æŒ‡å®šçš„pngå›¾ç‰‡
 	 */
 	void render() const;
-	/*! @brief ½«³¡¾°¹âÕ¤»¯
-	 *  @param model: Ä£ĞÍÀà
-	 *  @param scene: ³¡¾°Àà
+	/*! @brief å°†åœºæ™¯å…‰æ …åŒ–
+	 *  @param model: æ¨¡å‹ç±»
+	 *  @param scene: åœºæ™¯ç±»
 	 */
 	void rasterizeScene(Model& model, Scene& scene);
-	/*! @brief Õ¹Ê¾½¨Ê÷Ê±¼ä¡¢BVH½¨Á¢Ê±¼ä¡¢äÖÈ¾Ê±¼äÒÔ¼°×ÜÊ±¼ä
+	/*! @brief å±•ç¤ºå»ºæ ‘æ—¶é—´ã€BVHå»ºç«‹æ—¶é—´ã€æ¸²æŸ“æ—¶é—´ä»¥åŠæ€»æ—¶é—´
 	 */
 	void showInfo() const;
 
 private:
-	/*! @brief BVH¸ù½Úµã
+	/*! @brief BVHæ ¹èŠ‚ç‚¹
 	 */
 	BVHNode* m_bvh;
-	/*! @brief ËÄ²æÊ÷¸ù½Úµã
+	/*! @brief å››å‰æ ‘æ ¹èŠ‚ç‚¹
 	 */
 	QuadNode* m_quadTree;
-	/*! @brief Ã¿¸öÏñËØËù¶ÔÓ¦µÄËÄ²æÊ÷½ÚµãµÄÊı×é
+	/*! @brief æ¯ä¸ªåƒç´ æ‰€å¯¹åº”çš„å››å‰æ ‘èŠ‚ç‚¹çš„æ•°ç»„
 	 */
 	QuadNode** m_pixelQuadNodes;
 
-	/*! @brief äÖÈ¾´°¿Ú¿í¶È¡¢¸ß¶È
+	/*! @brief æ¸²æŸ“çª—å£å®½åº¦ã€é«˜åº¦
 	 */
 	int m_width, m_height;
-	/*! @brief ×îÖÕÍ¼ÏñµÄRGBAÊı¾İ£¬Ã¿4Î»´ú±íÒ»¸öÏñËØµÄRGBA
+	/*! @brief æœ€ç»ˆå›¾åƒçš„RGBAæ•°æ®ï¼Œæ¯4ä½ä»£è¡¨ä¸€ä¸ªåƒç´ çš„RGBA
 	 */
 	unsigned char* m_image;
-	/*! @brief äÖÈ¾µÄÄ£ĞÍµÄÃû³Æ
+	/*! @brief æ¸²æŸ“çš„æ¨¡å‹çš„åç§°
 	 */
 	std::string m_modelName;
-	/*! @brief äÖÈ¾ËùĞèÊ±¼ä
+	/*! @brief æ¸²æŸ“æ‰€éœ€æ—¶é—´
 	 */
 	std::chrono::duration<double, std::milli> m_renderTime;
-	/*! @brief ¹¹½¨ËÄ²æÊ÷ËùĞèÊ±¼ä
+	/*! @brief æ„å»ºå››å‰æ ‘æ‰€éœ€æ—¶é—´
 	 */
 	std::chrono::duration<double, std::milli> m_buildTreeTime;
-	/*! @brief ¹¹½¨BVHËùĞèÊ±¼ä
+	/*! @brief æ„å»ºBVHæ‰€éœ€æ—¶é—´
 	 */
 	std::chrono::duration<double, std::milli> m_buildBVHTime;
 
-	/*! @brief ¹¹½¨³õÊ¼µÄËÄ²æÊ÷
+	/*! @brief æ„å»ºåˆå§‹çš„å››å‰æ ‘
 	 */
 	void buildQuadTree();
-	/*! @brief ¹¹½¨BVH
-	 *  @param triangles: Èı½ÇĞÎIDÊı×é
-	 *  @param left: ¸Ã½Úµã¶ÔÓ¦µÄÈı½ÇĞÎID¼¯ºÏÔÚIDÊı×éµÄÆğÊ¼Ë÷Òı
-	 *  @param right: ¸Ã½Úµã¶ÔÓ¦µÄÈı½ÇĞÎID¼¯ºÏÔÚIDÊı×éµÄÖÕÖ¹Ë÷Òı
-	 *  @param axis: ¸Ã½Úµã»®·Ö¶ÔÓ¦µÄÖá(0±íÊ¾xÖá£¬1±íÊ¾yÖá£¬2±íÊ¾zÖá)
-	 *  @param model: Ä£ĞÍÀà
-	 *	@return µ±Ç°¹¹½¨µÄBVH½Úµã
+	/*! @brief æ„å»ºBVH
+	 *  @param triangles: ä¸‰è§’å½¢IDæ•°ç»„
+	 *  @param left: è¯¥èŠ‚ç‚¹å¯¹åº”çš„ä¸‰è§’å½¢IDé›†åˆåœ¨IDæ•°ç»„çš„èµ·å§‹ç´¢å¼•
+	 *  @param right: è¯¥èŠ‚ç‚¹å¯¹åº”çš„ä¸‰è§’å½¢IDé›†åˆåœ¨IDæ•°ç»„çš„ç»ˆæ­¢ç´¢å¼•
+	 *  @param axis: è¯¥èŠ‚ç‚¹åˆ’åˆ†å¯¹åº”çš„è½´(0è¡¨ç¤ºxè½´ï¼Œ1è¡¨ç¤ºyè½´ï¼Œ2è¡¨ç¤ºzè½´)
+	 *  @param model: æ¨¡å‹ç±»
+	 *	@return å½“å‰æ„å»ºçš„BVHèŠ‚ç‚¹
 	 */
 	BVHNode* buildBVH(int* triangles, int left, int right, int axis, Model& model);
-	/*! @brief µİ¹é¹âÕ¤»¯³¡¾°
-	 *  @param bvhNode: µ±Ç°BVH½Úµã
-	 *  @param quadNode: µ±Ç°ËÄ²æÊ÷½Úµã
-	 *  @param model: Ä£ĞÍÀà
-	 *  @param lightDirection: ³¡¾°¹âÏß·½Ïò
-	 *  @param diffuseColor: ³¡¾°µÄÂş·´ÉäÑÕÉ«
+	/*! @brief é€’å½’å…‰æ …åŒ–åœºæ™¯
+	 *  @param bvhNode: å½“å‰BVHèŠ‚ç‚¹
+	 *  @param quadNode: å½“å‰å››å‰æ ‘èŠ‚ç‚¹
+	 *  @param model: æ¨¡å‹ç±»
+	 *  @param lightDirection: åœºæ™¯å…‰çº¿æ–¹å‘
+	 *  @param diffuseColor: åœºæ™¯çš„æ¼«åå°„é¢œè‰²
 	 */
 	void recursiveRasterizeScene(BVHNode* bvhNode, QuadNode* quadNode, Model& model, glm::vec3 lightDirection, glm::vec3 diffuseColor);
-	/*! @brief ¹âÕ¤»¯Èı½ÇĞÎ
-	 *  @param face: Èı½ÇĞÎµÄ¶¥µãÊı×é
-	 *  @param color: Èı½ÇĞÎµÄÑÕÉ«
+	/*! @brief å…‰æ …åŒ–ä¸‰è§’å½¢
+	 *  @param face: ä¸‰è§’å½¢çš„é¡¶ç‚¹æ•°ç»„
+	 *  @param color: ä¸‰è§’å½¢çš„é¢œè‰²
 	 */
 	void rasterizeTriangle(glm::vec3* face, glm::vec3 color);
-	/*! @brief ¸üĞÂËÄ²æÊ÷
+	/*! @brief æ›´æ–°å››å‰æ ‘
 	 *
-	 *  ¸ù¾İ¸ø¶¨µÄËÄ²æÊ÷½ÚµãÏòÉÏ¸üĞÂÉî¶ÈÖµ
+	 *  æ ¹æ®ç»™å®šçš„å››å‰æ ‘èŠ‚ç‚¹å‘ä¸Šæ›´æ–°æ·±åº¦å€¼
 	 *
-	 *  @param node: Òª¸üĞÂµÄËÄ²æÊ÷½Úµã
+	 *  @param node: è¦æ›´æ–°çš„å››å‰æ ‘èŠ‚ç‚¹
 	 */
 	void update(QuadNode* node);
-	/*! @brief ÅĞ¶ÏÈı½ÇĞÎÊÇ·ñĞèÒª¹âÕ¤»¯
-	 *  @param[in] vertices: Èı½ÇĞÎµÄ¶¥µãÊı×é
-	 *	@return ÊÇ·ñĞèÒª¹âÕ¤»¯Èı½ÇĞÎ
+	/*! @brief åˆ¤æ–­ä¸‰è§’å½¢æ˜¯å¦éœ€è¦å…‰æ …åŒ–
+	 *  @param[in] vertices: ä¸‰è§’å½¢çš„é¡¶ç‚¹æ•°ç»„
+	 *	@return æ˜¯å¦éœ€è¦å…‰æ …åŒ–ä¸‰è§’å½¢
 	 */
 	bool isNeedRasterize(glm::vec3* vertices) const;
-	/*! @brief »®·ÖÊı×é
+	/*! @brief åˆ’åˆ†æ•°ç»„
 	 *
-	 *  ¸ù¾İ¸ø¶¨Î»ÖÃk½«Êı×é»®·ÖÎªÒÔÏÂĞÎÊ½: Êı×éÇ°k¸öµÄÖµĞ¡ÓÚµÈÓÚÊı×éµÚk¸öµÄÖµ£¬
-	 *  Êı×éºók¸öµÄÖµ´óÓÚµÈÓÚÊı×éµÚk¸öµÄÖµ
+	 *  æ ¹æ®ç»™å®šä½ç½®kå°†æ•°ç»„åˆ’åˆ†ä¸ºä»¥ä¸‹å½¢å¼: æ•°ç»„å‰kä¸ªçš„å€¼å°äºç­‰äºæ•°ç»„ç¬¬kä¸ªçš„å€¼ï¼Œ
+	 *  æ•°ç»„åkä¸ªçš„å€¼å¤§äºç­‰äºæ•°ç»„ç¬¬kä¸ªçš„å€¼
 	 *
-	 *  @param triangles: Èı½ÇĞÎIDÊı×é
-	 *  @param left: ÆğÊ¼Ë÷Òı
-	 *  @param right: ÖÕÖ¹Ë÷Òı
-	 *  @param axis: ¸ù¾İÄÄ¸öÖáÏò»®·Ö
-	 *  @param k: ¸ø¶¨µÄÎ»ÖÃk
-	 *  @param model: Ä£ĞÍÀà
+	 *  @param triangles: ä¸‰è§’å½¢IDæ•°ç»„
+	 *  @param left: èµ·å§‹ç´¢å¼•
+	 *  @param right: ç»ˆæ­¢ç´¢å¼•
+	 *  @param axis: æ ¹æ®å“ªä¸ªè½´å‘åˆ’åˆ†
+	 *  @param k: ç»™å®šçš„ä½ç½®k
+	 *  @param model: æ¨¡å‹ç±»
 	 */
 	void partition(int* triangles, int left, int right, int axis, int k, Model& model);
-	/*! @brief ÅĞ¶Ï¸ø¶¨µÄËÄ²æÊ÷½ÚµãÊÇ·ñ°üº¬BVH½Úµã
-	 *  @param bvhNode: BVH½Úµã
-	 *  @param quadNode: ËÄ²æÊ÷½Úµã
-	 *	@return ËÄ²æÊ÷½ÚµãÊÇ·ñ°üº¬BVH½Úµã
+	/*! @brief åˆ¤æ–­ç»™å®šçš„å››å‰æ ‘èŠ‚ç‚¹æ˜¯å¦åŒ…å«BVHèŠ‚ç‚¹
+	 *  @param bvhNode: BVHèŠ‚ç‚¹
+	 *  @param quadNode: å››å‰æ ‘èŠ‚ç‚¹
+	 *	@return å››å‰æ ‘èŠ‚ç‚¹æ˜¯å¦åŒ…å«BVHèŠ‚ç‚¹
 	 */
 	bool isInQuadNode(BVHNode* bvhNode, QuadNode* quadNode);
 };

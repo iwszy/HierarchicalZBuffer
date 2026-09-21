@@ -5,72 +5,72 @@
 
 constexpr auto PI = 3.14159265;
 
-/*! @brief ³¡¾°Àà
+/*! @brief åœºæ™¯ç±»
  *  
- *  °üº¬³¡¾°µÄ¸÷ÖÖ²ÎÊı
+ *  åŒ…å«åœºæ™¯çš„å„ç§å‚æ•°
  *  
  */
 class Scene{
 public:
 	Scene();
 
-	/*! @brief ¶ÔÏòÁ¿½øĞĞMVP±ä»»
-	 *  @param[in] vec: Òª½øĞĞ±ä»»µÄÏòÁ¿
-	 *  @return MVP±ä»»ºóµÄÏòÁ¿
+	/*! @brief å¯¹å‘é‡è¿›è¡ŒMVPå˜æ¢
+	 *  @param[in] vec: è¦è¿›è¡Œå˜æ¢çš„å‘é‡
+	 *  @return MVPå˜æ¢åçš„å‘é‡
 	 */
 	glm::vec3 mvpTransform(glm::vec3& vec) const;
-	/*! @brief »ñÈ¡¹âÏß·½Ïò
-	 *  @return ¹âÏß·½Ïò
+	/*! @brief è·å–å…‰çº¿æ–¹å‘
+	 *  @return å…‰çº¿æ–¹å‘
 	 */
 	inline glm::vec3 getLightDirection() const { return m_lightDirection; }
-	/*! @brief »ñÈ¡Âş·´ÉäÏîÑÕÉ«
-	 *  @return Âş·´ÉäÏîÑÕÉ«
+	/*! @brief è·å–æ¼«åå°„é¡¹é¢œè‰²
+	 *  @return æ¼«åå°„é¡¹é¢œè‰²
 	 */
 	inline glm::vec3 getDiffuseColor() const { return m_diffuseColor; }
-	/*! @brief »ñÈ¡äÖÈ¾´°¿Ú¿í¶È
-	 *  @return äÖÈ¾´°¿Ú¿í¶È
+	/*! @brief è·å–æ¸²æŸ“çª—å£å®½åº¦
+	 *  @return æ¸²æŸ“çª—å£å®½åº¦
 	 */
 	inline int getWidth() const { return m_width; }
-	/*! @brief »ñÈ¡äÖÈ¾´°¿Ú¸ß¶È
-	 *  @return äÖÈ¾´°¿Ú¸ß¶È
+	/*! @brief è·å–æ¸²æŸ“çª—å£é«˜åº¦
+	 *  @return æ¸²æŸ“çª—å£é«˜åº¦
 	 */
 	inline int getHeight() const{ return m_height; }
 private:
-	/*! @brief Ïà»úÎ»ÖÃ
+	/*! @brief ç›¸æœºä½ç½®
 	 */
 	glm::vec3 m_camera;
-	/*! @brief Ïà»ú³¯Ïò·½Ïò
+	/*! @brief ç›¸æœºæœå‘æ–¹å‘
 	 */
 	glm::vec3 m_eyeDirection;
-	/*! @brief Ïà»úÏòÉÏ·½Ïò
+	/*! @brief ç›¸æœºå‘ä¸Šæ–¹å‘
 	 */
 	glm::vec3 m_up;
-	/*! @brief ¹âÏß·½Ïò
+	/*! @brief å…‰çº¿æ–¹å‘
 	 */
 	glm::vec3 m_lightDirection;
-	/*! @brief ÊÓÆ½ÃæÀëÏà»úµÄ×î½ü¾àÀë¡¢×îÔ¶¾àÀë£¬ÊÓ¿Ú½Ç¶È
+	/*! @brief è§†å¹³é¢ç¦»ç›¸æœºçš„æœ€è¿‘è·ç¦»ã€æœ€è¿œè·ç¦»ï¼Œè§†å£è§’åº¦
 	 */
 	float m_near, m_far, m_fov;
-	/*! @brief MVP±ä»»¾ØÕó£¬ÆäÖµµÈÓÚÊÓ¿Ú±ä»»¾ØÕó*Í¶Ó°¾ØÕó*ÊÓÍ¼±ä»»¾ØÕó
+	/*! @brief MVPå˜æ¢çŸ©é˜µï¼Œå…¶å€¼ç­‰äºè§†å£å˜æ¢çŸ©é˜µ*æŠ•å½±çŸ©é˜µ*è§†å›¾å˜æ¢çŸ©é˜µ
 	 */
 	glm::mat4 m_mvp;
-	/*! @brief Âş·´ÉäÏîÑÕÉ«
+	/*! @brief æ¼«åå°„é¡¹é¢œè‰²
 	 */
 	glm::vec3 m_diffuseColor;
-	/*! @brief äÖÈ¾´°¿Ú¿í¶È¡¢¸ß¶È
+	/*! @brief æ¸²æŸ“çª—å£å®½åº¦ã€é«˜åº¦
 	 */
 	int m_width, m_height;
 
-	/*! @brief ¼ÆËãÊÓÍ¼±ä»»¾ØÕó
-	 *  @return ÊÓÍ¼±ä»»¾ØÕó
+	/*! @brief è®¡ç®—è§†å›¾å˜æ¢çŸ©é˜µ
+	 *  @return è§†å›¾å˜æ¢çŸ©é˜µ
 	 */
 	glm::mat4 getView() const;
-	/*! @brief ¼ÆËãÍ¶Ó°±ä»»¾ØÕó
-	 *  @return Í¶Ó°±ä»»¾ØÕó
+	/*! @brief è®¡ç®—æŠ•å½±å˜æ¢çŸ©é˜µ
+	 *  @return æŠ•å½±å˜æ¢çŸ©é˜µ
 	 */
 	glm::mat4 getProjection() const;
-	/*! @brief ¼ÆËãÊÓ¿Ú±ä»»¾ØÕó
-	 *  @return ÊÓ¿Ú±ä»»¾ØÕó
+	/*! @brief è®¡ç®—è§†å£å˜æ¢çŸ©é˜µ
+	 *  @return è§†å£å˜æ¢çŸ©é˜µ
 	 */
 	glm::mat4 getViewport() const;
 };
