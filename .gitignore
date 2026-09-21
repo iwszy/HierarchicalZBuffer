@@ -1,0 +1,66 @@
+# ============================================================
+#  Visual Studio / MSBuild 构建产物与本地状态
+#  —— 只把源码、工程文件与资源纳入版本管理
+# ============================================================
+
+# VS 本地缓存（本工程里占了 1.5 GB，务必忽略）
+.vs/
+
+# 解决方案 / 项目级的本地用户设置
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.vcxproj.user
+
+# IntelliSense / 浏览数据库 / 预编译头缓存
+*.ipch
+*.vsidx
+*.VC.db
+*.VC.VC.opendb
+*.psess
+*.vsp
+*.vspx
+
+# 编译中间目录
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+ARM/
+ARM64/
+# 本工程 MSBuild 的中间目录，形如 Hierarch.f158c95e/
+Hierarch.*/
+*.tlog
+*.log
+
+# 编译产物
+*.obj
+!models/*.obj
+*.exe
+*.dll
+*.lib
+*.exp
+*.ilk
+*.pdb
+*.idb
+*.iobj
+*.ipdb
+*.pch
+*.res
+*.tlh
+*.tli
+*.recipe
+*.lastbuildstate
+*.bsc
+*.sbr
+*.G.Cache
+
+# 杂项
+*.tmp
+*.bak
+*.orig
+Thumbs.db
+desktop.ini
