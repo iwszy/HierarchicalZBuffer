@@ -23,6 +23,9 @@ public:
 	BasicHierarchicalZBuffer(int width, int height);
 	~BasicHierarchicalZBuffer();
 
+	BasicHierarchicalZBuffer(const BasicHierarchicalZBuffer&) = delete;
+	BasicHierarchicalZBuffer& operator=(const BasicHierarchicalZBuffer&) = delete;
+
 	/*! @brief 将最终结果写入指定的png图片
 	 */
 	void render() const;

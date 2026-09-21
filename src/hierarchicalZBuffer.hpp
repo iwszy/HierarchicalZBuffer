@@ -32,14 +32,16 @@ struct BVHNode {
 	std::vector<int> triangles;
 	float xmin, xmax, ymin, ymax, zmin, zmax;
 
-	/*! @brief 递归删除BVH节点
+	BVHNode() : left(nullptr), right(nullptr) {}
+
+	BVHNode(const BVHNode&) = delete;
+	BVHNode& operator=(const BVHNode&) = delete;
+
+	/*! @brief 递归释放整棵子树（子节点的析构会继续向下递归）
 	 */
-	void free() const{
-		if (left != nullptr) {
-			left->free();
-			right->free();
-		}
-		delete this;
+	~BVHNode() {
+		delete left;
+		delete right;
 	}
 };
 
@@ -54,6 +56,9 @@ class HierarchicalZBuffer
 public:
 	HierarchicalZBuffer(int width, int height);
 	~HierarchicalZBuffer();
+
+	HierarchicalZBuffer(const HierarchicalZBuffer&) = delete;
+	HierarchicalZBuffer& operator=(const HierarchicalZBuffer&) = delete;
 
 	/*! @brief 将最终结果写入指定的png图片
 	 */

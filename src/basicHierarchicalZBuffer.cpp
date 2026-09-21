@@ -5,6 +5,7 @@
 #include "stb_image_write.hpp"
 
 BasicHierarchicalZBuffer::BasicHierarchicalZBuffer(int width, int height) {
+    m_quadTree = nullptr;
     m_width = width;
     m_height = height;
     int pixelNum = m_width * m_height;
@@ -20,7 +21,8 @@ BasicHierarchicalZBuffer::BasicHierarchicalZBuffer(int width, int height) {
 
 BasicHierarchicalZBuffer::~BasicHierarchicalZBuffer() {
     delete[] m_image;
-    m_quadTree->free();
+    delete[] m_pixelQuadNodes;
+    delete m_quadTree;
 }
 
 void BasicHierarchicalZBuffer::showInfo() const {
@@ -204,6 +206,8 @@ void BasicHierarchicalZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 colo
 }
 
 void BasicHierarchicalZBuffer::buildQuadTree() {
+    //允许重复调用：先释放上一次构建的树
+    delete m_quadTree;
     std::stack<QuadNode*> stack;
     m_quadTree = new QuadNode(nullptr, 0, 0, m_width, 0, m_height);
     stack.push(m_quadTree);

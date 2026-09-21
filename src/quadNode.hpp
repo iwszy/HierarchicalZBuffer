@@ -40,19 +40,22 @@ struct QuadNode {
 		top = t;
 		bottom = b;
 		depth = maxFloat;
-		children = new QuadNode * [4];
+		children = new QuadNode * [4]();
 	}
 
-	/*! @brief 递归删除节点
+	QuadNode(const QuadNode&) = delete;
+	QuadNode& operator=(const QuadNode&) = delete;
+
+	/*! @brief 递归释放整棵子树
+	 *
+	 *  先删除 4 个子节点（子节点的析构会继续向下递归），再释放子节点指针数组。
+	 *  原来这里只 delete this，children 数组本身从未释放，是主要泄漏点。
 	 */
-	void free() const{
+	~QuadNode() {
 		for (int i = 0; i < 4; i++) {
-			if (children[i] != nullptr) {
-				children[i]->free();
-				children[i] = nullptr;
-			}
+			delete children[i];
 		}
-		delete this;
+		delete[] children;
 	}
 };
 

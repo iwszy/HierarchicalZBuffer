@@ -1,6 +1,7 @@
 #ifndef __MODEL_HPP__
 #define __MODEL_HPP__
 
+#include <array>
 #include <vector>
 #include <string>
 #include <glm/glm.hpp>
@@ -16,6 +17,9 @@ class Model {
 public:
 	Model();
 	~Model();
+
+	Model(const Model&) = delete;
+	Model& operator=(const Model&) = delete;
 
 	/*! @brief 导入模型
 	 *  @param modelPath: 模型所在的位置
@@ -84,7 +88,7 @@ private:
 	glm::vec3* m_mvpVertices;
 	/*! @brief 模型的面数组，其中面使用3个顶点的索引进行存储
 	 */
-	std::vector<int*> m_faces;
+	std::vector<std::array<int, 3>> m_faces;
 	/*! @brief 三角形各个轴的中心位置的数组
 	 */
 	glm::vec3* m_axisCenters;

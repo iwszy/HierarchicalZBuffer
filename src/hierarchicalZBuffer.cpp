@@ -5,6 +5,8 @@
 #include "stb_image_write.hpp"
 
 HierarchicalZBuffer::HierarchicalZBuffer(int width, int height) {
+    m_bvh = nullptr;
+    m_quadTree = nullptr;
     m_width = width;
     m_height = height;
     int pixelNum = m_width * m_height;
@@ -20,8 +22,9 @@ HierarchicalZBuffer::HierarchicalZBuffer(int width, int height) {
 
 HierarchicalZBuffer::~HierarchicalZBuffer() {
     delete[] m_image;
-    m_quadTree->free();
-    m_bvh->free();
+    delete[] m_pixelQuadNodes;
+    delete m_quadTree;
+    delete m_bvh;
 }
 
 void HierarchicalZBuffer::showInfo() const {
@@ -44,11 +47,13 @@ void HierarchicalZBuffer::rasterizeScene(Model& model, Scene& scene) {
     int faceNum = model.getFaceNum();
     model.mvpTransform(scene);
     model.calAxisParams();
-    int* triangles = new int[faceNum];
+    delete m_bvh;
+    m_bvh = nullptr;
+    std::vector<int> triangles(faceNum);
     for (int i = 0; i < faceNum; i++) {
         triangles[i] = i;
     }
-    m_bvh = buildBVH(triangles, 0, faceNum - 1,0 , model);
+    m_bvh = buildBVH(triangles.data(), 0, faceNum - 1,0 , model);
     end = std::chrono::steady_clock::now();
     m_buildBVHTime = end - start;
     start = std::chrono::steady_clock::now();
@@ -56,7 +61,6 @@ void HierarchicalZBuffer::rasterizeScene(Model& model, Scene& scene) {
     recursiveRasterizeScene(m_bvh, m_quadTree, model, lightDirection, diffuseColor);
     end = std::chrono::steady_clock::now();
     m_renderTime = end - start;
-    delete[] triangles;
 }
 
 void HierarchicalZBuffer::recursiveRasterizeScene(BVHNode* bvhNode, QuadNode* quadNode, Model& model, glm::vec3 lightDirection, glm::vec3 diffuseColor) {
@@ -283,6 +287,8 @@ BVHNode* HierarchicalZBuffer::buildBVH(int* triangles, int left, int right, int 
 
 
 void HierarchicalZBuffer::buildQuadTree() {
+    //允许重复调用：先释放上一次构建的树
+    delete m_quadTree;
     std::stack<QuadNode*> stack;
     m_quadTree = new QuadNode(nullptr, 0, 0, m_width, 0, m_height);
     stack.push(m_quadTree);

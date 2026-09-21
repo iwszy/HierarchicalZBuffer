@@ -40,5 +40,6 @@ int main() {
         hierarchicalZBuffer.render();
         hierarchicalZBuffer.showInfo();
     }
+    delete[] models;
     return 0;
 }

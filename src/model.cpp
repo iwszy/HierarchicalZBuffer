@@ -45,7 +45,7 @@ void Model::loadModel(std::string modelPath) {
 		} else if (start == "f ") {
 			std::string index("");
 			bool isBegin = true, haveSplit = false;
-			auto face = new int[3];
+			std::array<int, 3> face{};
 			int faceIndex = 0;
 			for (int i = 2; i < line.size(); i++) {
 				if (isBegin && line[i] == '/') {
@@ -111,6 +111,7 @@ glm::vec3* Model::getMVPFace(int i) const{
 }
 
 void Model::mvpTransform(Scene& scene) {
+	delete[] m_mvpVertices;
 	m_mvpVertices = new glm::vec3[m_vertexNum];
 	for (int i = 0; i < m_vertexNum; i++) {
 		m_mvpVertices[i] = scene.mvpTransform(m_vertices[i]);
@@ -118,6 +119,9 @@ void Model::mvpTransform(Scene& scene) {
 }
 
 void Model::calAxisParams() {
+	delete[] m_axisCenters;
+	delete[] m_axisMaximums;
+	delete[] m_axisMinimums;
 	m_axisCenters = new glm::vec3[m_faceNum];
 	m_axisMaximums = new glm::vec3[m_faceNum];
 	m_axisMinimums = new glm::vec3[m_faceNum];
@@ -134,7 +138,7 @@ void Model::calAxisParams() {
 }
 
 void Model::calAxisParam(int i, int axis) const{
-	int* vertices = m_faces[i];
+	const std::array<int, 3>& vertices = m_faces[i];
 	float max, min;
 	if (axis == 2) {
 		max = glm::max(glm::abs(m_mvpVertices[vertices[0]].z), glm::max(glm::abs(m_mvpVertices[vertices[1]].z), glm::abs(m_mvpVertices[vertices[2]].z)));
