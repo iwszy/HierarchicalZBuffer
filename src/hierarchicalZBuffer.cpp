@@ -176,7 +176,16 @@ void HierarchicalZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 color) {
     if (!isTopFlat) {
         //如果不是上平底，则执行以下循环，使用扫描线的思想完成上半部分三角形的光栅化
         for (int y = ymax; y >= ymid; y--) {
+            if (y < 0 || y >= m_height) {
+                //该扫描线在窗口外：不做任何像素操作，只把插值状态推进一行
+                xLeft += dxleft;
+                xRight += dxRight;
+                z += dxleft * dzx + dzy;
+                continue;
+            }
             int ixLeft = static_cast<int>(xLeft), ixRight = static_cast<int>(xRight);
+            if (ixLeft < 0) ixLeft = 0;
+            if (ixRight >= m_width) ixRight = m_width - 1;
             float tempZ = z + dzx * (ixLeft - xLeft);
             for (int x = ixLeft; x <= ixRight; x++) {
                 float depth = glm::abs(tempZ);
@@ -212,8 +221,22 @@ void HierarchicalZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 color) {
             ymid--;
         }
         for (int y = ymid; y >= ymin; y--) {
+            if (y < 0 || y >= m_height) {
+                //该扫描线在窗口外：不做任何像素操作，只把插值状态推进一行
+                xLeft += dxleft;
+                xRight += dxRight;
+                z += dxleft * dzx + dzy;
+                continue;
+            }
             int ixLeft = static_cast<int>(xLeft), ixRight = static_cast<int>(xRight);
-            float tempZ = z;
+            float tempZ = z;   //与原实现保持一致，不做子像素修正
+            if (ixLeft < 0) {
+                tempZ += dzx * (0 - xLeft);   //仅在被裁剪到窗口左边界时补上深度推进量
+                ixLeft = 0;
+            }
+            if (ixRight >= m_width) {
+                ixRight = m_width - 1;
+            }
             for (int x = ixLeft; x <= ixRight; x++) {
                 float depth = glm::abs(tempZ);
                 tempZ += dzx;
@@ -234,8 +257,13 @@ void HierarchicalZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 color) {
     }
     else if (isTopFlat) {
         //当三角形既是上平底又是下平底时，即三角形是一条平行于y轴的线时，直接从左到右光栅化三角形
+        if (ymax < 0 || ymax >= m_height) {
+            return;   //该退化三角形完全位于窗口外
+        }
         int ixLeft = static_cast<int>(glm::min(face[0].x, glm::min(face[1].x, face[2].x)));
         int ixRihgt = static_cast<int>(glm::max(face[0].x, glm::max(face[1].x, face[2].x)));
+        if (ixLeft < 0) ixLeft = 0;
+        if (ixRihgt >= m_width) ixRihgt = m_width - 1;
         z += dzx * (ixLeft - xLeft);
         for (int x = ixLeft; x <= ixRihgt; x++) {
             float depth = glm::abs(z);
@@ -344,9 +372,15 @@ void HierarchicalZBuffer::update(QuadNode* node) {
 }
 
 bool HierarchicalZBuffer::isNeedRasterize(glm::vec3* vertices) const {
-    QuadNode* node0 = m_pixelQuadNodes[static_cast<int>(vertices[0].y) * m_width + static_cast<int>(vertices[0].x)];
-    QuadNode* node1 = m_pixelQuadNodes[static_cast<int>(vertices[1].y) * m_width + static_cast<int>(vertices[1].x)];
-    QuadNode* node2 = m_pixelQuadNodes[static_cast<int>(vertices[2].y) * m_width + static_cast<int>(vertices[2].x)];
+    //顶点可能落在窗口外，先夹取到窗口内，避免越界访问 m_pixelQuadNodes
+    int vx[3], vy[3];
+    for (int i = 0; i < 3; i++) {
+        vx[i] = glm::clamp(static_cast<int>(vertices[i].x), 0, m_width - 1);
+        vy[i] = glm::clamp(static_cast<int>(vertices[i].y), 0, m_height - 1);
+    }
+    QuadNode* node0 = m_pixelQuadNodes[vy[0] * m_width + vx[0]];
+    QuadNode* node1 = m_pixelQuadNodes[vy[1] * m_width + vx[1]];
+    QuadNode* node2 = m_pixelQuadNodes[vy[2] * m_width + vx[2]];
     float z = glm::min(glm::abs(vertices[0].z), glm::min(glm::abs(vertices[1].z), glm::abs(vertices[2].z)));
     //查找可以覆盖三角形的四叉树节点，本质是查找像素节点的公共祖先
     while (node0->level > node1->level) {

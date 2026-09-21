@@ -4,7 +4,7 @@
 #include <limits>
 
 constexpr auto maxFloat = std::numeric_limits <float>::max();
-constexpr auto minFloat = std::numeric_limits <float>::min();
+constexpr auto minFloat = std::numeric_limits <float>::lowest();
 
 /*! @brief 四叉树节点
  *

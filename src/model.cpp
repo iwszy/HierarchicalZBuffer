@@ -13,7 +13,7 @@ Model::Model() {
 
 void Model::loadModel(std::string modelPath) {
 	m_modelName = modelPath.substr(7, modelPath.length() - 11);
-	float maxX = std::numeric_limits<float>::min(), minX = std::numeric_limits<float>::max();
+	float maxX = std::numeric_limits<float>::lowest(), minX = std::numeric_limits<float>::max();
 	float maxY = maxX, minY = minX, maxZ = maxX, minZ = minX, maxData = maxX;
 	std::ifstream f;
 	f.open(modelPath, std::ios::in);

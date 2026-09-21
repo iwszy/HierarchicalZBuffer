@@ -56,7 +56,8 @@ void BasicZBuffer::rasterizeScene(Model& model, Scene& scene) {
 }
 
 void BasicZBuffer::rasterizeTriangle(glm::vec3* vertices, glm::vec3 color) {
-    int xmin = m_width, xmax = 0, ymin = m_height, ymax = 0;
+    int xmin = std::numeric_limits<int>::max(), xmax = std::numeric_limits<int>::min();
+    int ymin = std::numeric_limits<int>::max(), ymax = std::numeric_limits<int>::min();
     //计算三角形的包围盒
     for (int i = 0; i < 3; i++) {
         xmin = glm::min(xmin, static_cast<int>(vertices[i][0]));
@@ -64,7 +65,9 @@ void BasicZBuffer::rasterizeTriangle(glm::vec3* vertices, glm::vec3 color) {
         ymin = glm::min(ymin, static_cast<int>(vertices[i][1]));
         ymax = glm::max(ymax, static_cast<int>(vertices[i][1]));
     }
-    //逐个判断包围盒内的像素是否位于三角形内，并进行z测试
+    //把包围盒裁剪到渲染窗口内，避免越界写入 m_zBuffer / m_image
+    xmin = glm::max(xmin, 0); xmax = glm::min(xmax, m_width - 1);
+    ymin = glm::max(ymin, 0); ymax = glm::min(ymax, m_height - 1);
     for (int x = xmin; x <= xmax; x++) {
         for (int y = ymin; y <= ymax; y++) {
             glm::vec3 baryCentricCoordinate = baryCentric(vertices, glm::vec2(x, y));

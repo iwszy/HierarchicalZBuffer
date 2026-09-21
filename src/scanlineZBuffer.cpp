@@ -138,6 +138,14 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 			//当识别到该边对只有1条边，表示该边对应的三角形只跨越1条扫描线，此时直接从左向右扫描三角形
 			int xLeft = static_cast<int>(edge.xLeft), xRight = static_cast<int>(edge.dyRight == -1 ? (edge.xLeft + edge.dxLeft) : edge.xRight);
 			float z = edge.z, depth;
+			//把扫描线裁剪到渲染窗口内，避免越界写入 m_zBuffer / m_image
+			if (xLeft < 0) {
+			    z += edge.dzx * (0 - xLeft);
+			    xLeft = 0;
+			}
+			if (xRight >= m_width) {
+			    xRight = m_width - 1;
+			}
 			for (int j = xLeft; j <= xRight; j++) {
 				depth = glm::abs(z);
 				z += edge.dzx;
@@ -230,7 +238,10 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 					maxX = face[j].x;
 				}
 			}
-			m_classifyEdgeTables[static_cast<int>(face[0].y)].push_back({minX, maxX - minX, 1, face[minIndex].z,i});
+			int flatY = static_cast<int>(face[0].y);
+			if (flatY >= 0 && flatY < m_height) {
+			    m_classifyEdgeTables[flatY].push_back({minX, maxX - minX, 1, face[minIndex].z,i});
+			}
 			continue;
 		}
 		for (int j = 0; j < 3; j++) {
@@ -250,7 +261,16 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 				x += dx;
 				z += dx * dzx + dzy;
 			}
-			m_classifyEdgeTables[ymax].push_back({ x, dx, ymax - ymin + 1, z,i });
+			//把边裁剪到渲染窗口内：起始扫描线在窗口上方时，把 x、z 的插值推进过去
+			if (ymax >= m_height) {
+			    int skip = ymax - (m_height - 1);
+			    x += dx * skip;
+			    z += (dx * dzx + dzy) * skip;
+			    ymax = m_height - 1;
+			}
+			if (ymax >= 0) {
+			    m_classifyEdgeTables[ymax].push_back({ x, dx, ymax - ymin + 1, z,i });
+			}
 		}
 	}
 }
@@ -324,7 +344,16 @@ void ScanlineZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 color) {
 	if (!isTopFlat) {
 		//如果不是上平底，则执行以下循环，使用扫描线的思想完成上半部分三角形的光栅化
 		for (int y = ymax; y >= ymid; y--) {
+			if (y < 0 || y >= m_height) {
+			    //该扫描线在窗口外：不做任何像素操作，只把插值状态推进一行
+			    xLeft += dxleft;
+			    xRight += dxRight;
+			    z += dxleft * dzx + dzy;
+			    continue;
+			}
 			int ixLeft = static_cast<int>(xLeft), ixRight = static_cast<int>(xRight);
+			if (ixLeft < 0) ixLeft = 0;
+			if (ixRight >= m_width) ixRight = m_width - 1;
 			float tempZ = z + dzx * (ixLeft - xLeft);
 			for (int x = ixLeft; x <= ixRight; x++) {
 				float depth = glm::abs(tempZ);
@@ -359,8 +388,22 @@ void ScanlineZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 color) {
 			ymid--;
 		}
 		for (int y = ymid; y >= ymin; y--) {
+			if (y < 0 || y >= m_height) {
+			    //该扫描线在窗口外：不做任何像素操作，只把插值状态推进一行
+			    xLeft += dxleft;
+			    xRight += dxRight;
+			    z += dxleft * dzx + dzy;
+			    continue;
+			}
 			int ixLeft = static_cast<int>(xLeft), ixRight = static_cast<int>(xRight);
-			float tempZ = z;
+			float tempZ = z;   //与原实现保持一致，不做子像素修正
+			if (ixLeft < 0) {
+			    tempZ += dzx * (0 - xLeft);   //仅在被裁剪到窗口左边界时补上深度推进量
+			    ixLeft = 0;
+			}
+			if (ixRight >= m_width) {
+			    ixRight = m_width - 1;
+			}
 			for (int x = ixLeft; x <= ixRight; x++) {
 				float depth = glm::abs(tempZ);
 				tempZ += dzx;
@@ -379,8 +422,13 @@ void ScanlineZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 color) {
 		}
 	} else if (isTopFlat) {
 		//当三角形既是上平底又是下平底时，即三角形是一条平行于y轴的线时，直接从左到右光栅化三角形
+		if (ymax < 0 || ymax >= m_height) {
+		    return;   //该退化三角形完全位于窗口外
+		}
 		int ixLeft = static_cast<int>(glm::min(face[0].x, glm::min(face[1].x, face[2].x)));
 		int ixRihgt = static_cast<int>(glm::max(face[0].x, glm::max(face[1].x, face[2].x)));
+		if (ixLeft < 0) ixLeft = 0;
+		if (ixRihgt >= m_width) ixRihgt = m_width - 1;
 		z += dzx * (ixLeft - xLeft);
 		for (int x = ixLeft; x <= ixRihgt; x++) {
 			float depth = glm::abs(z);
