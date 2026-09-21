@@ -53,11 +53,12 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 		int faceNum = model.getFaceNum();
 		model.mvpTransform(scene);
 		glm::vec3 lightDirection = scene.getLightDirection(), diffuseColor = scene.getDiffuseColor();
+		glm::vec3 face[3];
 		for (int i = 0; i < faceNum; i++) {
-			glm::vec3* face = model.getFace(i);
+			model.getFace(i, face);
 			glm::vec3 normal = glm::normalize(glm::cross(face[1] - face[0], face[2] - face[0]));
 			float diffuseIntensity = glm::max(0.f, glm::dot(normal, lightDirection));
-			face = model.getMVPFace(i);
+			model.getMVPFace(i, face);
 			for (int j = 0; j < 3; j++) {
 				face[j].y = static_cast<float>(static_cast<int>(face[j].y));
 			}
@@ -170,13 +171,14 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 	model.mvpTransform(scene);
 	int faceNum = model.getFaceNum();
-	float* faceDiff = new float[3];
+	float faceDiff[3];
 	glm::vec3 lightDirection = scene.getLightDirection(), diffuseColor = scene.getDiffuseColor();
+	glm::vec3 face[3];
 	for (int i = 0; i < faceNum; i++) {
-		glm::vec3* face = model.getFace(i);
+		model.getFace(i, face);
 		glm::vec3 normal = glm::normalize(glm::cross(face[1] - face[0], face[2] - face[0]));
 		float diffuseIntensity = glm::max(0.f, glm::dot(normal,lightDirection));
-		face = model.getMVPFace(i);
+		model.getMVPFace(i, face);
 		for (int j = 0; j < 3; j++) {
 			face[j].y = static_cast<float>(static_cast<int>(face[j].y));
 		}
@@ -264,7 +266,7 @@ void ScanlineZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 color) {
 	if (face[1].y < face[2].y) {
 		std::swap(face[1], face[2]);
 	}
-	float* faceDiff = new float[3];
+	float faceDiff[3];
 	for (int i = 0; i < 3; i++) {
 		faceDiff[i] = face[i].y - face[(i + 1) % 3].y;
 	}

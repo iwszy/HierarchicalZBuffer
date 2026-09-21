@@ -94,20 +94,16 @@ Model::~Model() {
 }
 
 
-glm::vec3* Model::getFace(int i) const {
-	glm::vec3* faceVertices = new glm::vec3[3];
-	faceVertices[0] = m_vertices[m_faces[i][0]];
-	faceVertices[1] = m_vertices[m_faces[i][1]];
-	faceVertices[2] = m_vertices[m_faces[i][2]];
-	return faceVertices;
+void Model::getFace(int i, glm::vec3 face[3]) const {
+	face[0] = m_vertices[m_faces[i][0]];
+	face[1] = m_vertices[m_faces[i][1]];
+	face[2] = m_vertices[m_faces[i][2]];
 }
 
-glm::vec3* Model::getMVPFace(int i) const{
-	glm::vec3* faceVertices = new glm::vec3[3];
-	faceVertices[0] = m_mvpVertices[m_faces[i][0]];
-	faceVertices[1] = m_mvpVertices[m_faces[i][1]];
-	faceVertices[2] = m_mvpVertices[m_faces[i][2]];
-	return faceVertices;
+void Model::getMVPFace(int i, glm::vec3 face[3]) const {
+	face[0] = m_mvpVertices[m_faces[i][0]];
+	face[1] = m_mvpVertices[m_faces[i][1]];
+	face[2] = m_mvpVertices[m_faces[i][2]];
 }
 
 void Model::mvpTransform(Scene& scene) {

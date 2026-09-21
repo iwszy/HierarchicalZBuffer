@@ -27,14 +27,14 @@ public:
 	void loadModel(std::string modelPath);
 	/*! @brief 根据面的索引获取对应的顶点
 	 *  @param i: 面索引
-	 *	@return 面的顶点数组
+	 *  @param[out] face: 面的 3 个顶点，由调用方提供缓冲区
 	 */
-	glm::vec3* getFace(int i) const;
+	void getFace(int i, glm::vec3 face[3]) const;
 	/*! @brief 根据面的索引获取对应的变换后的顶点
 	 *  @param i: 面索引
-	 *	@return 变换后的面的顶点数组
+	 *  @param[out] face: 变换后的面的 3 个顶点，由调用方提供缓冲区
 	 */
-	glm::vec3* getMVPFace(int i) const;
+	void getMVPFace(int i, glm::vec3 face[3]) const;
 	/*! @brief 将所有顶点进行MVP变换
 	 *  @param scene: 场景类
 	 */

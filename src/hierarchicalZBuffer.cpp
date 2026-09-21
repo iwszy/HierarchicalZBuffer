@@ -89,11 +89,12 @@ void HierarchicalZBuffer::recursiveRasterizeScene(BVHNode* bvhNode, QuadNode* qu
 		recursiveRasterizeScene(bvhNode->right, tempQuadNode, model, lightDirection, diffuseColor);
     } else {
         //当前BVH节点没有子节点，说明为叶子节点，则绘制其包含的三角形
+		glm::vec3 face[3];
 		for (auto it = bvhNode->triangles.begin(); it != bvhNode->triangles.end(); ++it) {
-		    glm::vec3* face = model.getFace(*it);
+		    model.getFace(*it, face);
 		    glm::vec3 normal = glm::normalize(glm::cross(face[1] - face[0], face[2] - face[0]));
 		    float diffuseIntensity = glm::max(0.f, glm::dot(normal, lightDirection));
-		    face = model.getMVPFace(*it);
+		    model.getMVPFace(*it, face);
 		    for (int j = 0; j < 3; j++) {
 		        face[j].y = static_cast<float>(static_cast<int>(face[j].y));
 		    }
@@ -115,7 +116,7 @@ void HierarchicalZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 color) {
     if (face[1].y < face[2].y) {
         std::swap(face[1], face[2]);
     }
-    float* faceDiff = new float[3];
+    float faceDiff[3];
     for (int i = 0; i < 3; i++) {
         faceDiff[i] = face[i].y - face[(i + 1) % 3].y;
     }
