@@ -8,8 +8,10 @@
  *
  *  这是普通 z-Buffer、扫描线 z-Buffer(特化模式)、简单模式层次 z-Buffer、
  *  完整模式层次 z-Buffer 共用的光栅化内核。做法是把三角形按扫描线切成
- *  "上半部分 / 下半部分 / 退化成水平线"三种情况，逐行从左到右遍历像素，
- *  用平面方程解出的深度增量 dzx、dzy 递推深度，不做任何逐像素的方程求解。
+ *  "上半部分 / 下半部分 / 退化成水平线"三种情况，逐行从左到右遍历像素。
+ *
+ *  深度的求值方式见文件内 depthAt 的说明：先解出深度平面的 dzx、dzy，
+ *  再让每个像素直接代回平面方程，而不是沿扫描线累加状态。
  *
  *  "深度测试 + 写入深度"这一步各算法不同（普通 z-Buffer 只写 z-Buffer；
  *  层次 z-Buffer 还要把四叉树逐级向上更新），所以由调用方通过回调 storeDepth
@@ -84,6 +86,26 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
     if (glm::abs(faceDiff[1]) < kEpsilon) {
         isBottomFlat = true;
     }
+    //解出的 dzx、dzy 描述的是同一个深度平面：
+    //    z(x, y) = face[0].z + (face[0].y - y) * dzy + (x - face[0].x) * dzx
+    //每个像素都直接代回这个式子求值。原来的写法是沿扫描线逐行累加
+    //（z += dxleft * dzx + dzy），而这两项经常是一对量级相同、符号相反的
+    //大数（三角形越窄长越极端，实测单步可以到 ±13），它们相减本身就带误差，
+    //再乘上成百上千行，误差就积累成了肉眼可见的深度错误。
+    //退化成长条时 faceDiff 可能全为 0、dzy 是 inf，用 (dy == 0) 短路绕开它。
+    const float refX = face[0].x, refY = face[0].y, refZ = face[0].z;
+    auto depthAt = [dzx, dzy, refX, refY, refZ](float x, float y) {
+        const float dy = refY - y;
+        return -(refZ + (dy == 0.0f ? 0.0f : dy * dzy) + (x - refX) * dzx);
+    };
+    //像素范围是由浮点边界向零截断（static_cast<int>）得到的，最左/最右那个像素
+    //可能落在扫描行的真实跨度之外最多 1 像素。对普通三角形这点外推无所谓，
+    //但三角形越窄长 |dzx| 越大（实测可以到几十），外推出去深度会被甩到
+    //[-1, 1] 之外（实测出现过 +18.9 和 -37.2）。
+    //把求值位置夹回跨度之内即可：对跨度内的像素夹取是恒等变换，取值完全不变。
+    auto clampToSpan = [](float x, float lo, float hi) {
+        return x < lo ? lo : (x > hi ? hi : x);
+    };
     float xLeft, xRight, dxleft, dxRight, z;
     if (isTopFlat) {
         //如果这个三角形是上平底，则根据顶点face[0],face[1]的左右关系赋值相关参数
@@ -111,19 +133,16 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
         //如果不是上平底，则执行以下循环，使用扫描线的思想完成上半部分三角形的光栅化
         for (int y = ymax; y >= ymid; y--) {
             if (y < 0 || y >= height) {
-                //该扫描线在窗口外：不做任何像素操作，只把插值状态推进一行
+                //该扫描线在窗口外：不做任何像素操作，只把边界推进一行
                 xLeft += dxleft;
                 xRight += dxRight;
-                z += dxleft * dzx + dzy;
                 continue;
             }
             int ixLeft = static_cast<int>(xLeft), ixRight = static_cast<int>(xRight);
             if (ixLeft < 0) ixLeft = 0;
             if (ixRight >= width) ixRight = width - 1;
-            float tempZ = z + dzx * (ixLeft - xLeft);
             for (int x = ixLeft; x <= ixRight; x++) {
-                float depth = -tempZ;
-                tempZ += dzx;
+                const float depth = depthAt(clampToSpan(static_cast<float>(x), xLeft, xRight), static_cast<float>(y));
                 if (!storeDepth(x, y, depth)) {
                     continue;
                 }
@@ -134,7 +153,6 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
             }
             xLeft += dxleft;
             xRight += dxRight;
-            z += dxleft * dzx + dzy;
         }
     }
     if (!isBottomFlat) {
@@ -147,30 +165,21 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
             } else {
                 dxleft = (face[2].x - face[1].x) / faceDiff[1];
                 xLeft = face[1].x + dxleft;
-                z = face[1].z + (dxleft + static_cast<int>(xLeft) - xLeft) * dzx + dzy;
             }
             ymid--;
         }
         for (int y = ymid; y >= ymin; y--) {
             if (y < 0 || y >= height) {
-                //该扫描线在窗口外：不做任何像素操作，只把插值状态推进一行
+                //该扫描线在窗口外：不做任何像素操作，只把边界推进一行
                 xLeft += dxleft;
                 xRight += dxRight;
-                z += dxleft * dzx + dzy;
                 continue;
             }
             int ixLeft = static_cast<int>(xLeft), ixRight = static_cast<int>(xRight);
-            float tempZ = z;   //与原实现保持一致，不做子像素修正
-            if (ixLeft < 0) {
-                tempZ += dzx * (0 - xLeft);   //仅在被裁剪到窗口左边界时补上深度推进量
-                ixLeft = 0;
-            }
-            if (ixRight >= width) {
-                ixRight = width - 1;
-            }
+            if (ixLeft < 0) ixLeft = 0;
+            if (ixRight >= width) ixRight = width - 1;
             for (int x = ixLeft; x <= ixRight; x++) {
-                float depth = -tempZ;
-                tempZ += dzx;
+                const float depth = depthAt(clampToSpan(static_cast<float>(x), xLeft, xRight), static_cast<float>(y));
                 if (!storeDepth(x, y, depth)) {
                     continue;
                 }
@@ -181,21 +190,21 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
             }
             xLeft += dxleft;
             xRight += dxRight;
-            z += dxleft * dzx + dzy;
         }
     } else if (isTopFlat) {
-        //当三角形既是上平底又是下平底时，即三角形是一条平行于y轴的线时，直接从左到右光栅化三角形
+        //当三角形既是上平底又是下平底时，即三角形退化成一条平行于 x 轴的线时，直接从左到右光栅化
+        //此时 faceDiff 全为 0、平面方程退化，所以沿用 (xLeft, z) 这个参考点沿 x 线性求值
         if (ymax < 0 || ymax >= height) {
             return;   //该退化三角形完全位于窗口外
         }
-        int ixLeft = static_cast<int>(glm::min(face[0].x, glm::min(face[1].x, face[2].x)));
-        int ixRihgt = static_cast<int>(glm::max(face[0].x, glm::max(face[1].x, face[2].x)));
+        const float lineMinX = glm::min(face[0].x, glm::min(face[1].x, face[2].x));
+        const float lineMaxX = glm::max(face[0].x, glm::max(face[1].x, face[2].x));
+        int ixLeft = static_cast<int>(lineMinX);
+        int ixRihgt = static_cast<int>(lineMaxX);
         if (ixLeft < 0) ixLeft = 0;
         if (ixRihgt >= width) ixRihgt = width - 1;
-        z += dzx * (ixLeft - xLeft);
         for (int x = ixLeft; x <= ixRihgt; x++) {
-            float depth = -z;
-            z += dzx;
+            const float depth = -(z + dzx * (clampToSpan(static_cast<float>(x), lineMinX, lineMaxX) - xLeft));
             if (!storeDepth(x, ymax, depth)) {
                 continue;
             }
