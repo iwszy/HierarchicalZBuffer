@@ -155,6 +155,7 @@
     <ClInclude Include="src\basicZBuffer.hpp" />
     <ClInclude Include="src\scanlineZBuffer.hpp" />
     <ClInclude Include="src\model.hpp" />
+    <ClInclude Include="src\triangleRasterizer.hpp" />
     <ClInclude Include="src\stb_image.hpp" />
     <ClInclude Include="src\stb_image_write.hpp" />
   </ItemGroup>
