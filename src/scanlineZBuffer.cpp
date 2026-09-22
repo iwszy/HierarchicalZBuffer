@@ -17,6 +17,7 @@ ScanlineZBuffer::ScanlineZBuffer(int width, int height) {
 		m_image[i * 4 + 3] = 255;
 	}
 	m_classifyEdgeTables = new std::vector<ClassifyEdgeTable>[m_height];
+	m_aetSize = 0;
 	mode = 0;
 }
 
@@ -74,16 +75,24 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 	m_buildTableTime = end - start;
 	start = std::chrono::steady_clock::now();
 	for (int i = m_height - 1; i >= 0; i--) {
-		for (size_t j = 0; j < m_classifyEdgeTables[i].size(); j++) {
-			ClassifyEdgeTable classifyEdge = m_classifyEdgeTables[i][j];
+		//事件处理：把本行新出现的边并入活化边表
+		const std::vector<ClassifyEdgeTable>& edgeBucket = m_classifyEdgeTables[i];
+		for (size_t j = 0; j < edgeBucket.size(); j++) {
+			const ClassifyEdgeTable& classifyEdge = edgeBucket[j];
 			int id = classifyEdge.id;
-			if (m_activeTriangles.count(id)) {
+			int slot = m_triSlot[id];
+			if (slot < 0) {
+				//当该边对应的三角形是首次出现，则统一将该边视为左侧边，同时将dyRight赋值为-1以标识该活化边对只有1条边
+				slot = m_aetSize++;
+				m_triSlot[id] = slot;
+				m_aet[slot] = { classifyEdge.x, 0.0f, classifyEdge.dx, 0.0f, classifyEdge.dy, -1, classifyEdge.z, m_triangles[id].dzx, m_triangles[id].dzy, id};
+			} else {
 				//当该边对应的三角形不是首次出现，则进行以下判断
 				//dyRight != -1 => 该边对有2条边，此时需判断是否有1条边扫描完毕，如果有，则将该边填充至扫描完毕的那条边
 				//dyRight == -1 => 该边对只有1条边，此时需进入下一层判断
 				//该边所在的三角形是上平底 => 根据该边上顶点与已有边的上顶点的位置填充边对
 				//该边所在的三角形不是上平底 => 根据该边x增量与已有边的x增量的大小关系填充边对
-				ActiveEdgeTable activeEdge = m_activeEdgeTables[id];
+				ActiveEdgeTable& activeEdge = m_aet[slot];
 				if (activeEdge.dyRight == -1) {
 					if (glm::abs(classifyEdge.x - activeEdge.xLeft) < EPSILON) {
 						if (classifyEdge.dx < activeEdge.dxLeft) {
@@ -100,7 +109,7 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 							activeEdge.dyRight = classifyEdge.dy;
 						}
 					} else {
-						if (m_classifyEdgeTables[i][j].x < m_activeEdgeTables[id].xLeft) {
+						if (classifyEdge.x < activeEdge.xLeft) {
 							activeEdge.xRight = activeEdge.xLeft;
 							activeEdge.dxRight = activeEdge.dxLeft;
 							activeEdge.dyRight = activeEdge.dyLeft;
@@ -124,27 +133,23 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 					activeEdge.dyLeft = classifyEdge.dy;
 					activeEdge.z = classifyEdge.z;
 				}
-				m_activeEdgeTables[id] = activeEdge;
-			} else {
-				//当该边对应的三角形是首次出现，则统一将该边视为左侧边，同时将dyRight赋值为-1以标识该活化边对只有1条边
-				m_activeEdgeTables[id] = { classifyEdge.x, 0.0f, classifyEdge.dx, 0.0f, classifyEdge.dy, -1, classifyEdge.z, m_triangles[id].dzx, m_triangles[id].dzy, id};
-				m_activeTriangles.insert(id);
 			}
 		}
-		for (auto it = m_activeEdgeTables.begin(); it != m_activeEdgeTables.end(); ) {
-			//根据扫描线算法光栅化三角形并更新参数
-			auto edge = it->second;
-			auto color = m_triangles[edge.id].color;
+		//光栅化本行：顺序遍历紧凑数组，边对就地修改
+		for (int s = 0; s < m_aetSize; s++) {
+			ActiveEdgeTable& edge = m_aet[s];
+			int id = edge.id;
+			const glm::vec3& color = m_triangles[id].color;
 			//当识别到该边对只有1条边，表示该边对应的三角形只跨越1条扫描线，此时直接从左向右扫描三角形
 			int xLeft = static_cast<int>(edge.xLeft), xRight = static_cast<int>(edge.dyRight == -1 ? (edge.xLeft + edge.dxLeft) : edge.xRight);
 			float z = edge.z, depth;
 			//把扫描线裁剪到渲染窗口内，避免越界写入 m_zBuffer / m_image
 			if (xLeft < 0) {
-			    z += edge.dzx * (0 - xLeft);
-			    xLeft = 0;
+				z += edge.dzx * (0 - xLeft);
+				xLeft = 0;
 			}
 			if (xRight >= m_width) {
-			    xRight = m_width - 1;
+				xRight = m_width - 1;
 			}
 			for (int j = xLeft; j <= xRight; j++) {
 				depth = glm::abs(z);
@@ -160,17 +165,29 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 			}
 			edge.dyLeft--;
 			edge.dyRight--;
-			//当三角形扫描完毕，移除相应的边对
+			//当三角形扫描完毕，先标记、稍后统一压缩，避免打乱其余边对的相对顺序
 			if ((edge.dyLeft == 0 && edge.dyRight == 0) || edge.dyRight == -2) {
-				m_activeEdgeTables.erase(it++);
+				m_triSlot[id] = -1;
+				edge.id = -1;
 				continue;
 			}
 			edge.xLeft += edge.dxLeft;
 			edge.xRight += edge.dxRight;
 			edge.z += edge.dzx * edge.dxLeft + edge.dzy;
-			it->second = edge;
-			++it;
 		}
+		//稳定压缩：保持边对相对顺序不变，使同深度像素的覆盖顺序与原实现一致
+		int alive = 0;
+		for (int s = 0; s < m_aetSize; s++) {
+			if (m_aet[s].id < 0) {
+				continue;
+			}
+			if (alive != s) {
+				m_aet[alive] = m_aet[s];
+				m_triSlot[m_aet[alive].id] = alive;
+			}
+			alive++;
+		}
+		m_aetSize = alive;
 	}
 	end = std::chrono::steady_clock::now();
 	m_renderTime = end - start;
@@ -179,6 +196,17 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 	model.mvpTransform(scene);
 	int faceNum = model.getFaceNum();
+
+	//每次重建都清空上一次留下的状态，使本方法可以重复调用
+	for (int y = 0; y < m_height; y++) {
+		m_classifyEdgeTables[y].clear();
+	}
+	m_aetSize = 0;
+	m_triSlot.assign(faceNum, -1);
+	if (static_cast<int>(m_aet.size()) < faceNum) {
+		m_aet.resize(faceNum);
+	}
+	m_triangles.resize(faceNum);
 	float faceDiff[3];
 	glm::vec3 lightDirection = scene.getLightDirection(), diffuseColor = scene.getDiffuseColor();
 	glm::vec3 face[3];

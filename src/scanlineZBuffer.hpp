@@ -5,8 +5,6 @@
 #include <vector>
 #include <string>
 #include <chrono>
-#include <unordered_map>
-#include <unordered_set>
 #include "model.hpp"
 #include "scene.hpp"
 
@@ -104,18 +102,30 @@ public:
 	 */
 	inline void setMode(int modelNum) { mode = modelNum; }
 private:
-	/*! @brief 三角形字典，可以通过三角形id，快速查到对应的三角形
+	/*! @brief 三角形表，按面 id 直接索引
+	 *
+	 *	原来是 unordered_map<int,TriangleTable>，每次取颜色都要哈希一次
 	 */
-	std::unordered_map<int, TriangleTable> m_triangles;
+	std::vector<TriangleTable> m_triangles;
 	/*! @brief 分类多边形表
 	 */
 	std::vector<ClassifyEdgeTable>* m_classifyEdgeTables;
-	/*! @brief 活化三角形ID集合
+	/*! @brief 活化边表：紧凑数组，有效元素为 [0, m_aetSize)
+	 *
+	 *	原来是 unordered_map<int,ActiveEdgeTable>：每条扫描线都要把整张哈希表
+	 *	遍历一遍（指针追逐），而且每次读改写都要把整个结构体拷进拷出。
+	 *	改成连续数组后是顺序访存，且可以直接在数组元素上原地修改。
 	 */
-	std::unordered_set<int> m_activeTriangles;
-	/*! @brief 活化边表，可以通过多边形ID快速查询到对应活化的边
+	std::vector<ActiveEdgeTable> m_aet;
+	/*! @brief 面 id -> 该面在活化边表中的下标；-1 表示不在活化边表中
+	 *
+	 *	取代原来的 m_activeTriangles(unordered_set) 和
+	 *	m_activeEdgeTables(unordered_map) 两张哈希表，降到一次数组下标访问
 	 */
-	std::unordered_map<int, ActiveEdgeTable> m_activeEdgeTables;
+	std::vector<int> m_triSlot;
+	/*! @brief 活化边表中当前有效的边对个数
+	 */
+	int m_aetSize;
 	/*! @brief 渲染模式
 	 *
 	 *	1表示特化模式，其余为经典模式
