@@ -49,8 +49,10 @@ HierarchicalZBuffer::ScreenBounds HierarchicalZBuffer::projectBounds(const BVHNo
                                (c & 2) ? node->ymax : node->ymin,
                                (c & 4) ? node->zmax : node->zmin);
         const glm::vec4 h = glm::vec4(corner, 1.0f) * mvp;
-        if (h.w <= 1e-4f) {
-            //包围盒与近平面相交、或者跑到相机后面：投影结果不可靠，本帧放弃剔除
+        //注意：本工程的投影用的是行向量约定(v * MVP)，齐次分量 w 就是相机空间的 z；
+        //相机朝 -z 方向看，所以可见几何的 w 恒为负值，只有 w >= 0 才是"跑到相机后面"
+        if (h.w >= -1e-4f) {
+            //顶点跑到相机后面（或恰好在相机平面上）：投影结果不可靠，本帧放弃剔除
             sb.valid = false;
             sb.xmin = sb.ymin = std::numeric_limits<float>::lowest();
             sb.xmax = sb.ymax = std::numeric_limits<float>::max();
