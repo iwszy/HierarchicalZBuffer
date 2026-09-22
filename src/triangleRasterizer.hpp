@@ -20,7 +20,7 @@
  *  @param[in,out] image: 渲染窗口的 RGBA 缓冲
  *  @param[in] width: 渲染窗口宽度
  *  @param[in] height: 渲染窗口高度
- *  @param[in] storeDepth: 回调，签名 bool(int index, float depth)。
+ *  @param[in] storeDepth: 回调，签名 bool(int x, int y, float depth)。
  *                         返回 true 表示该像素通过深度测试、深度已写入，可以继续画颜色；
  *                         返回 false 表示被已有几何遮挡，跳过该像素
  */
@@ -114,10 +114,10 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
             for (int x = ixLeft; x <= ixRight; x++) {
                 float depth = glm::abs(tempZ);
                 tempZ += dzx;
-                int index = y * width + x;
-                if (!storeDepth(index, depth)) {
+                if (!storeDepth(x, y, depth)) {
                     continue;
                 }
+                const int index = y * width + x;
                 image[index * 4] = static_cast<unsigned char>(color.r * 255);
                 image[index * 4 + 1] = static_cast<unsigned char>(color.g * 255);
                 image[index * 4 + 2] = static_cast<unsigned char>(color.b * 255);
@@ -161,10 +161,10 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
             for (int x = ixLeft; x <= ixRight; x++) {
                 float depth = glm::abs(tempZ);
                 tempZ += dzx;
-                int index = y * width + x;
-                if (!storeDepth(index, depth)) {
+                if (!storeDepth(x, y, depth)) {
                     continue;
                 }
+                const int index = y * width + x;
                 image[index * 4] = static_cast<unsigned char>(color.r * 255);
                 image[index * 4 + 1] = static_cast<unsigned char>(color.g * 255);
                 image[index * 4 + 2] = static_cast<unsigned char>(color.b * 255);
@@ -186,10 +186,10 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
         for (int x = ixLeft; x <= ixRihgt; x++) {
             float depth = glm::abs(z);
             z += dzx;
-            int index = ymax * width + x;
-            if (!storeDepth(index, depth)) {
+            if (!storeDepth(x, ymax, depth)) {
                 continue;
             }
+            const int index = ymax * width + x;
             image[index * 4] = static_cast<unsigned char>(color.r * 255);
             image[index * 4 + 1] = static_cast<unsigned char>(color.g * 255);
             image[index * 4 + 2] = static_cast<unsigned char>(color.b * 255);

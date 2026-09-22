@@ -312,8 +312,9 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 
 void ScanlineZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 color) {
     rasterizeTriangleScanline(face, color, m_image, m_width, m_height,
-        [this](int index, float depth) {
+        [this](int x, int y, float depth) {
             //普通 z-Buffer：只做深度测试并写 z-Buffer
+            const int index = y * m_width + x;
             if (m_zBuffer[index] < depth) {
                 return false;
             }

@@ -4,13 +4,12 @@
 #include <string>
 #include <vector>
 #include <chrono>
-#include "quadNode.hpp"
+#include "zPyramid.hpp"
 #include "model.hpp"
 #include "scene.hpp"
 
 constexpr auto MAX_TRIANGLE = 20;
 
-#define EPSILON 1e-5
 
 /*! @brief BVH节点
  *
@@ -47,8 +46,10 @@ struct BVHNode {
 
 /*! @brief 层次z-Buffer类
  *
- *  使用完整模式的层次z-Buffer进行光栅化，即使用四叉树的同时用BVH预排序，
- *	仅支持全是三角形的模型
+ *  使用完整模式的层次z-Buffer进行光栅化：Z-max 金字塔 + BVH。
+ *  先用 BVH 把三角形按空间位置组织起来，递归时对每个 BVH 节点做一次遮挡判断，
+ *  通过则继续往细一层下探；被遮挡则整棵子树直接跳过。
+ *  仅支持全是三角形的模型
  *
  */
 class HierarchicalZBuffer
@@ -68,7 +69,7 @@ public:
 	 *  @param scene: 场景类
 	 */
 	void rasterizeScene(Model& model, Scene& scene);
-	/*! @brief 展示建树时间、BVH建立时间、渲染时间以及总时间
+	/*! @brief 展示建金字塔时间、BVH建立时间、渲染时间以及总时间
 	 */
 	void showInfo() const;
 
@@ -76,12 +77,11 @@ private:
 	/*! @brief BVH根节点
 	 */
 	BVHNode* m_bvh;
-	/*! @brief 四叉树根节点
+	/*! @brief Z-max 金字塔，取代了原来的指针四叉树
+	 *
+	 *	连续数组、没有任何指针：1024x1024 时共 1398101 个 float 约 5.6 MB
 	 */
-	QuadNode* m_quadTree;
-	/*! @brief 每个像素所对应的四叉树节点的数组
-	 */
-	QuadNode** m_pixelQuadNodes;
+	ZPyramid m_pyramid;
 
 	/*! @brief 渲染窗口宽度、高度
 	 */
@@ -101,9 +101,9 @@ private:
 	/*! @brief 渲染所需时间
 	 */
 	std::chrono::duration<double, std::milli> m_renderTime;
-	/*! @brief 构建四叉树所需时间
+	/*! @brief 构建 Z-max 金字塔所需时间
 	 */
-	std::chrono::duration<double, std::milli> m_buildTreeTime;
+	std::chrono::duration<double, std::milli> m_buildPyramidTime;
 	/*! @brief 构建BVH所需时间
 	 */
 	std::chrono::duration<double, std::milli> m_buildBVHTime;
@@ -119,12 +119,14 @@ private:
 	BVHNode* buildBVH(int* triangles, int left, int right, int axis, Model& model);
 	/*! @brief 递归光栅化场景
 	 *  @param bvhNode: 当前BVH节点
-	 *  @param quadNode: 当前四叉树节点
+	 *  @param level: 当前使用的金字塔层次（0 为逐像素层，rootLevel() 为最粗层）
+	 *  @param qx: 该层次下单元的横坐标
+	 *  @param qy: 该层次下单元的纵坐标
 	 *  @param model: 模型类
 	 *  @param lightDirection: 场景光线方向
 	 *  @param diffuseColor: 场景的漫反射颜色
 	 */
-	void recursiveRasterizeScene(BVHNode* bvhNode, QuadNode* quadNode, Model& model, glm::vec3 lightDirection, glm::vec3 diffuseColor);
+	void recursiveRasterizeScene(BVHNode* bvhNode, int level, int qx, int qy, Model& model, glm::vec3 lightDirection, glm::vec3 diffuseColor);
 	/*! @brief 光栅化三角形
 	 *  @param face: 三角形的顶点数组
 	 *  @param color: 三角形的颜色
@@ -144,12 +146,6 @@ private:
 	 *  @param model: 模型类
 	 */
 	void partition(int* triangles, int left, int right, int axis, int k, Model& model);
-	/*! @brief 判断给定的四叉树节点是否包含BVH节点
-	 *  @param bvhNode: BVH节点
-	 *  @param quadNode: 四叉树节点
-	 *	@return 四叉树节点是否包含BVH节点
-	 */
-	bool isInQuadNode(BVHNode* bvhNode, QuadNode* quadNode);
 };
 
 #endif // __HIERARCHICAL_ZBUFFER_HPP__

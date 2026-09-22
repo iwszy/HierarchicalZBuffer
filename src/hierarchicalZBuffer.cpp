@@ -1,13 +1,12 @@
 #include "hierarchicalZBuffer.hpp"
-#include <stack>
 #include <iostream>
+#include <limits>
 #include "stb_image.hpp"
 #include "stb_image_write.hpp"
 #include "triangleRasterizer.hpp"
 
-HierarchicalZBuffer::HierarchicalZBuffer(int width, int height) {
+HierarchicalZBuffer::HierarchicalZBuffer(int width, int height) : m_pyramid(width, height) {
     m_bvh = nullptr;
-    m_quadTree = nullptr;
     m_width = width;
     m_height = height;
     m_dirty = false;
@@ -19,18 +18,15 @@ HierarchicalZBuffer::HierarchicalZBuffer(int width, int height) {
         m_image[i * 4 + 2] = 0;
         m_image[i * 4 + 3] = 255;
     }
-    m_pixelQuadNodes = new QuadNode * [pixelNum];
 }
 
 HierarchicalZBuffer::~HierarchicalZBuffer() {
     delete[] m_image;
-    delete[] m_pixelQuadNodes;
-    delete m_quadTree;
     delete m_bvh;
 }
 
 void HierarchicalZBuffer::showInfo() const {
-    std::cout << "HierarchicalZBuffer: 四叉树建立时间为" << m_buildTreeTime.count() << "ms, " << "BVH建立时间为" << m_buildBVHTime.count() << "ms, " << "渲染时间为" << m_renderTime.count() << "ms, " << "总时间为" << (m_buildTreeTime + m_buildBVHTime + m_renderTime).count() << "ms" << std::endl;
+    std::cout << "HierarchicalZBuffer: 金字塔构建时间为" << m_buildPyramidTime.count() << "ms, " << "BVH建立时间为" << m_buildBVHTime.count() << "ms, " << "渲染时间为" << m_renderTime.count() << "ms, " << "总时间为" << (m_buildPyramidTime + m_buildBVHTime + m_renderTime).count() << "ms" << std::endl;
 }
 
 void HierarchicalZBuffer::render() const {
@@ -41,18 +37,18 @@ void HierarchicalZBuffer::render() const {
 
 void HierarchicalZBuffer::rasterizeScene(Model& model, Scene& scene) {
     m_modelName = model.getModelName();
-    //清空颜色缓冲，使同一个对象可以被安全地重复使用（四叉树/ BVH 会在光栅化时重建）
+    //清空颜色缓冲，使同一个对象可以被安全地重复使用（金字塔 / BVH 会在光栅化时重建）
     if (m_dirty) {
-    	const int pixelNum = m_width * m_height;
-    	for (int i = 0; i < pixelNum; i++) {
-    		m_image[i * 4] = m_image[i * 4 + 1] = m_image[i * 4 + 2] = 0;
-    	}
+		const int pixelNum = m_width * m_height;
+		for (int i = 0; i < pixelNum; i++) {
+			m_image[i * 4] = m_image[i * 4 + 1] = m_image[i * 4 + 2] = 0;
+		}
     }
     m_dirty = true;
     auto start = std::chrono::steady_clock::now();
-    m_quadTree = buildQuadTree(m_width, m_height, m_pixelQuadNodes, m_quadTree);
+    m_pyramid.clear();
     auto end = std::chrono::steady_clock::now();
-    m_buildTreeTime = end - start;
+    m_buildPyramidTime = end - start;
     start = std::chrono::steady_clock::now();
     int faceNum = model.getFaceNum();
     model.mvpTransform(scene);
@@ -68,35 +64,45 @@ void HierarchicalZBuffer::rasterizeScene(Model& model, Scene& scene) {
     m_buildBVHTime = end - start;
     start = std::chrono::steady_clock::now();
     glm::vec3 lightDirection = scene.getLightDirection(), diffuseColor = scene.getDiffuseColor();
-    recursiveRasterizeScene(m_bvh, m_quadTree, model, lightDirection, diffuseColor);
+    recursiveRasterizeScene(m_bvh, m_pyramid.rootLevel(), 0, 0, model, lightDirection, diffuseColor);
     end = std::chrono::steady_clock::now();
     m_renderTime = end - start;
 }
 
-void HierarchicalZBuffer::recursiveRasterizeScene(BVHNode* bvhNode, QuadNode* quadNode, Model& model, glm::vec3 lightDirection, glm::vec3 diffuseColor) {
-    QuadNode* tempQuadNode = quadNode;
-    //寻找可以包含BVH节点的最小四叉树节点，同时测试BVH节点是否被四叉树节点遮挡
-	while (true) {
-		if (tempQuadNode->depth < bvhNode->zmin) {
+void HierarchicalZBuffer::recursiveRasterizeScene(BVHNode* bvhNode, int level, int qx, int qy, Model& model, glm::vec3 lightDirection, glm::vec3 diffuseColor) {
+    //从当前层次开始，先做遮挡判断；能通过就再往细一层下探，直到下不去或者已经是最细一层
+    while (true) {
+        if (m_pyramid.depthAt(level, qx, qy) < bvhNode->zmin) {
             return;
-		}
+        }
+        if (level == 0) {
+            break;
+        }
+        const int childLevel = level - 1;
         bool isBest = true;
         for (int i = 0; i < 4; i++) {
-            if (tempQuadNode->children[i] != nullptr && isInQuadNode(bvhNode, tempQuadNode->children[i])) {
-                tempQuadNode = tempQuadNode->children[i];
+            const int cx = (qx << 1) + (i & 1);
+            const int cy = (qy << 1) + (i >> 1);
+            if (cx >= m_pyramid.levelWidth(childLevel) || cy >= m_pyramid.levelHeight(childLevel)) {
+                continue;
+            }
+            if (m_pyramid.nodeContains(childLevel, cx, cy, bvhNode->xmin, bvhNode->xmax, bvhNode->ymin, bvhNode->ymax)) {
+                level = childLevel;
+                qx = cx;
+                qy = cy;
                 isBest = false;
                 break;
             }
         }
         if (isBest) {
-	        break;
+            break;
         }
-	}
+    }
     //如果当前BVH节点未被遮挡，则进行下一步操作
     if (bvhNode->left != nullptr) {
         //当前BVH节点有子节点，则先光栅化子节点
-		recursiveRasterizeScene(bvhNode->left, tempQuadNode, model, lightDirection, diffuseColor);
-		recursiveRasterizeScene(bvhNode->right, tempQuadNode, model, lightDirection, diffuseColor);
+		recursiveRasterizeScene(bvhNode->left, level, qx, qy, model, lightDirection, diffuseColor);
+		recursiveRasterizeScene(bvhNode->right, level, qx, qy, model, lightDirection, diffuseColor);
     } else {
         //当前BVH节点没有子节点，说明为叶子节点，则绘制其包含的三角形
 		glm::vec3 face[3];
@@ -108,7 +114,7 @@ void HierarchicalZBuffer::recursiveRasterizeScene(BVHNode* bvhNode, QuadNode* qu
 		    for (int j = 0; j < 3; j++) {
 		        face[j].y = static_cast<float>(static_cast<int>(face[j].y));
 		    }
-		    if (isNeedRasterize(m_pixelQuadNodes, m_width, m_height, face)) {
+		    if (m_pyramid.isNeedRasterize(face)) {
 		        rasterizeTriangle(face, diffuseColor * diffuseIntensity);
 		    }
 		}
@@ -117,14 +123,12 @@ void HierarchicalZBuffer::recursiveRasterizeScene(BVHNode* bvhNode, QuadNode* qu
 
 void HierarchicalZBuffer::rasterizeTriangle(glm::vec3* face, glm::vec3 color) {
     rasterizeTriangleScanline(face, color, m_image, m_width, m_height,
-        [this](int index, float depth) {
-            //层次 z-Buffer：深度落在四叉树的像素节点上，写完后要逐级向上更新
-            QuadNode* node = m_pixelQuadNodes[index];
-            if (node->depth < depth) {
+        [this](int x, int y, float depth) {
+            //层次 z-Buffer：先与金字塔第 0 层（逐像素层）比较，通过后写入并沿父链向上更新
+            if (m_pyramid.pixelDepth(x, y) < depth) {
                 return false;
             }
-            node->depth = depth;
-            updateQuadTreeDepth(node->parent);
+            m_pyramid.writePixel(x, y, depth);
             return true;
         });
 }
@@ -133,9 +137,11 @@ BVHNode* HierarchicalZBuffer::buildBVH(int* triangles, int left, int right, int 
     int faceNum = right - left + 1;
     BVHNode* node = new BVHNode();
     //计算当前构建的BVH节点的包围盒
-    float xmin = maxFloat, xmax = minFloat;
-    float ymin = maxFloat, ymax = minFloat;
-    float zmin = maxFloat, zmax = minFloat;
+    constexpr float kFloatMax = std::numeric_limits<float>::max();
+    constexpr float kFloatLowest = std::numeric_limits<float>::lowest();
+    float xmin = kFloatMax, xmax = kFloatLowest;
+    float ymin = kFloatMax, ymax = kFloatLowest;
+    float zmin = kFloatMax, zmax = kFloatLowest;
 	for (int i = left; i <= right; i++) {
         node->triangles.push_back(triangles[i]);
         xmin = glm::min(xmin, model.getAxisMinimum(triangles[i], 0));
@@ -162,13 +168,6 @@ BVHNode* HierarchicalZBuffer::buildBVH(int* triangles, int left, int right, int 
     return node;
 }
 
-
-
-
-
-
-
-
 void HierarchicalZBuffer::partition(int* triangles, int left, int right, int axis, int k, Model& model){
     if (left == right) {
         return;
@@ -192,9 +191,4 @@ void HierarchicalZBuffer::partition(int* triangles, int left, int right, int axi
     } else {
         partition(triangles, j + 1, right, axis, k, model);
     }
-}
-
-bool HierarchicalZBuffer::isInQuadNode(BVHNode* bvhNode, QuadNode* quadNode) {
-    return quadNode->left - bvhNode->xmin <= EPSILON && quadNode->right - bvhNode->xmax >= -EPSILON &&
-        quadNode->bottom - bvhNode->ymin <= EPSILON && quadNode->top - bvhNode->ymax >= -EPSILON;
 }

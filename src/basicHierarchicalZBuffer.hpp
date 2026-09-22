@@ -4,17 +4,16 @@
 #include <glm/glm.hpp>
 #include <string>
 #include <chrono>
-#include "quadNode.hpp"
+#include "zPyramid.hpp"
 #include "model.hpp"
 #include "scene.hpp"
 
-#define EPSILON 1e-5
 
 /*! @brief 基础层次z-Buffer类
  *
- *  使用简单模式的层次z-Buffer进行光栅化，即仅使用四叉树而不进行预先排序。
- *	在光栅化三角形时采用扫描线算法的思想。
- *	仅支持全是三角形的模型
+ *  使用简单模式的层次z-Buffer进行光栅化：只用一棵 Z-max 金字塔做遮挡剔除，
+ *  不事先对三角形做空间排序。在光栅化三角形时采用扫描线算法的思想。
+ *  仅支持全是三角形的模型
  *
  */
 class BasicHierarchicalZBuffer
@@ -34,16 +33,16 @@ public:
 	 *  @param scene: 场景类
 	 */
 	void rasterizeScene(Model &model, Scene &scene);
-	/*! @brief 展示建树时间、渲染时间和总时间
+	/*! @brief 展示建金字塔时间、渲染时间和总时间
 	 */
 	void showInfo() const;
 private:
-	/*! @brief 四叉树的根节点
+	/*! @brief Z-max 金字塔，取代了原来的指针四叉树
+	 *
+	 *	连续数组、没有任何指针：1024x1024 时共 1398101 个 float 约 5.6 MB，
+	 *	"建金字塔"只是把整块内存填成最大深度
 	 */
-	QuadNode* m_quadTree;
-	/*! @brief 每个像素所对应的四叉树节点的数组
-	 */
-	QuadNode** m_pixelQuadNodes;
+	ZPyramid m_pyramid;
 
 	/*! @brief 渲染窗口宽度、高度
 	 */
@@ -63,16 +62,15 @@ private:
 	/*! @brief 渲染所需时间
 	 */
 	std::chrono::duration<double, std::milli> m_renderTime;
-	/*! @brief 构建四叉树所需时间
+	/*! @brief 构建 Z-max 金字塔所需时间
 	 */
-	std::chrono::duration<double, std::milli> m_buildTreeTime;
+	std::chrono::duration<double, std::milli> m_buildPyramidTime;
 
 	/*! @brief 光栅化三角形
 	 *  @param face: 三角形的顶点数组
 	 *  @param color: 三角形的颜色
 	 */
 	void rasterizeTriangle(glm::vec3* face, glm::vec3 color);
-
 };
 
 #endif // !__BASIC_HIERARCHICAL_ZBUFFER_HPP__

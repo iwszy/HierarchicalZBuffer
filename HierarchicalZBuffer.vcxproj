@@ -141,7 +141,7 @@
   <ItemGroup>
     <ClCompile Include="src\hierarchicalZBuffer.cpp" />
     <ClCompile Include="src\basicHierarchicalZBuffer.cpp" />
-    <ClCompile Include="src\quadNode.hpp" />
+    <ClInclude Include="src\zPyramid.hpp" />
     <ClCompile Include="src\scene.cpp" />
     <ClCompile Include="src\basicZBuffer.cpp" />
     <ClCompile Include="src\scanlineZBuffer.cpp" />
