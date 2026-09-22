@@ -33,6 +33,8 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
 {
     //与原各算法中的 EPSILON 宏取值一致
     constexpr double kEpsilon = 1e-5;
+    //低于这个屏幕面积（单位：平方像素）的三角形视为已退化
+    constexpr float kMinScreenArea = 0.01f;
 
     //深度一律取 -z，而不是 |z|。
     //本工程的投影（m_near/m_far 都取负值、配合行向量约定）把近平面映到
@@ -62,6 +64,12 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
     float b = (face[1].z - face[0].z) * (face[2].x - face[0].x) - (face[1].x - face[0].x) * (face[2].z - face[0].z);
     float c = (face[1].x - face[0].x) * faceDiff[2] + faceDiff[0] * (face[2].x - face[0].x);
     float dzx = -a / c, dzy = b / c;
+    //屏幕空间面积 = |c| / 2。三角形退化成极窄长条、甚至一条线时，过这三点的平面是病态的
+    //（|dzx| 可以大到几十，而三角形自身的深度跨度只有千分之几），它给出的片元深度没有意义；
+    //这种三角形本来也覆盖不到一个像素，直接跳过。
+    if (glm::abs(c) < 2.0f * kMinScreenArea) {
+        return;
+    }
     if (glm::abs(c) < kEpsilon) {
         //与经典扫描线算法建表的思路相同，当三角形是一条线时执行以下操作
         int minXIndex = 0, maxXIndex = 0;

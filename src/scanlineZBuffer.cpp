@@ -96,7 +96,7 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 				//当该边对应的三角形是首次出现，则统一将该边视为左侧边，同时将dyRight赋值为-1以标识该活化边对只有1条边
 				slot = m_aetSize++;
 				m_triSlot[id] = slot;
-				m_aet[slot] = { classifyEdge.x, 0.0f, classifyEdge.dx, 0.0f, classifyEdge.dy, -1, classifyEdge.z, m_triangles[id].dzx, m_triangles[id].dzy, id};
+				m_aet[slot] = { classifyEdge.x, 0.0f, classifyEdge.dx, 0.0f, classifyEdge.dy, -1, classifyEdge.x, classifyEdge.z, i, m_triangles[id].dzx, m_triangles[id].dzy, id};
 			} else {
 				//当该边对应的三角形不是首次出现，则进行以下判断
 				//dyRight != -1 => 该边对有2条边，此时需判断是否有1条边扫描完毕，如果有，则将该边填充至扫描完毕的那条边
@@ -123,7 +123,9 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 						activeEdge.xLeft = classifyEdge.x;
 						activeEdge.dxLeft = classifyEdge.dx;
 						activeEdge.dyLeft = classifyEdge.dy;
-						activeEdge.z = classifyEdge.z;
+						activeEdge.xRef = classifyEdge.x;
+						activeEdge.zRef = classifyEdge.z;
+						activeEdge.yRef = i;
 					} else {
 						//新边在右
 						activeEdge.xRight = classifyEdge.x;
@@ -138,7 +140,9 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 					activeEdge.xLeft = classifyEdge.x;
 					activeEdge.dxLeft = classifyEdge.dx;
 					activeEdge.dyLeft = classifyEdge.dy;
-					activeEdge.z = classifyEdge.z;
+					activeEdge.xRef = classifyEdge.x;
+					activeEdge.zRef = classifyEdge.z;
+					activeEdge.yRef = i;
 				}
 			}
 		}
@@ -148,20 +152,25 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 			int id = edge.id;
 			const glm::vec3& color = m_triangles[id].color;
 			//当识别到该边对只有1条边，表示该边对应的三角形只跨越1条扫描线，此时直接从左向右扫描三角形
-			int xLeft = static_cast<int>(edge.xLeft), xRight = static_cast<int>(edge.dyRight == -1 ? (edge.xLeft + edge.dxLeft) : edge.xRight);
-			float z = edge.z, depth;
+			const float spanLeft = edge.xLeft;
+			const float spanRight = (edge.dyRight == -1) ? (edge.xLeft + edge.dxLeft) : edge.xRight;
+			int xLeft = static_cast<int>(spanLeft), xRight = static_cast<int>(spanRight);
 			//把扫描线裁剪到渲染窗口内，避免越界写入 m_zBuffer / m_image
 			if (xLeft < 0) {
-				z += edge.dzx * (0 - xLeft);
 				xLeft = 0;
 			}
 			if (xRight >= m_width) {
 				xRight = m_width - 1;
 			}
+			//本行的深度由平面方程直接求值（不再逐像素累加）；求值位置还要夹回该扫描行的
+			//真实跨度之内：像素范围是向零截断得到的，最左那个像素的整数坐标可能落在跨度
+			//之外最多 1 像素，而窄长三角形的 dzx 可以很大，外推出去深度会被甩出视锥
+			//（实测最大越界幅度到过 36.6，而整个视锥才 [-1, 1]）
+			const float rowZ = edge.zRef + (edge.yRef - i) * edge.dzy;
 			for (int j = xLeft; j <= xRight; j++) {
+				const float xc = (j < spanLeft) ? spanLeft : ((static_cast<float>(j) > spanRight) ? spanRight : static_cast<float>(j));
 				//深度取 -z（越远越大），与光栅化内核保持一致
-				depth = -z;
-				z += edge.dzx;
+				const float depth = -(rowZ + (xc - edge.xRef) * edge.dzx);
 				int index = m_width * i + j;
 				if (m_zBuffer[index] < depth) {
 					continue;
@@ -181,7 +190,6 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 			}
 			edge.xLeft += edge.dxLeft;
 			edge.xRight += edge.dxRight;
-			edge.z += edge.dzx * edge.dxLeft + edge.dzy;
 		}
 		//稳定压缩：保持边对相对顺序不变，使同深度像素的覆盖顺序与原实现一致
 		int alive = 0;
@@ -259,6 +267,10 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 			dzx = (face[maxXIndex].z - face[minXIndex].z) / (maxX - minX);
 			dzy = (face[maxYIndex].z - face[minYIndex].z) / (maxY - minY);
 		}
+		//屏幕面积过小的退化三角形直接跳过，理由见 triangleRasterizer.hpp 的说明
+		if (glm::abs(c) < 2.0f * 0.01f) {
+			continue;
+		}
 		m_triangles[i] = { dzx, dzy, diffuseColor * diffuseIntensity };
 		//当三角形三个顶点y值相同时，经典扫描线算法会不渲染这个三角形，此时需要特殊处理
 		//将该三角形跨越的x值作为dx以在渲染时特殊处理
@@ -290,22 +302,23 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 			if (faceDiff[j] < 0) {
 				std::swap(curJ, nextJ);
 			}
-			float x = face[curJ].x, z = face[curJ].z + (static_cast<int>(x) - x) * dzx;
+			float x = face[curJ].x;
 			int ymax = static_cast<int>(face[curJ].y), ymin = static_cast<int>(face[nextJ].y);
 			if ((face[curJ].y - face[nextJ].y) * (face[curJ].y - face[preJ].y) < -EPSILON) {
 				ymax--;
 				x += dx;
-				z += dx * dzx + dzy;
 			}
-			//把边裁剪到渲染窗口内：起始扫描线在窗口上方时，把 x、z 的插值推进过去
+			//把边裁剪到渲染窗口内：起始扫描线在窗口上方时，把 x 的插值推进过去
 			if (ymax >= m_height) {
 			    int skip = ymax - (m_height - 1);
 			    x += dx * skip;
-			    z += (dx * dzx + dzy) * skip;
 			    ymax = m_height - 1;
 			}
 			if (ymax >= 0) {
-			    m_classifyEdgeTables[ymax].push_back({ x, dx, ymax - ymin + 1, z,i });
+			    //记录该边进入扫描线时的参考点 (x, ymax)，以及深度平面在该点的取值。
+			    //渲染时用平面方程直接求值，不再沿扫描线逐行累加
+			    const float zRef = face[curJ].z + (face[curJ].y - ymax) * dzy + (x - face[curJ].x) * dzx;
+			    m_classifyEdgeTables[ymax].push_back({ x, dx, ymax - ymin + 1, zRef, i });
 			}
 		}
 	}

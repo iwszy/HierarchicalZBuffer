@@ -72,7 +72,16 @@ struct ActiveEdgeTable {
 	float xLeft, xRight;
 	float dxLeft, dxRight;
 	int dyLeft, dyRight;
-	float z, dzx, dzy;
+	/*! @brief 左侧边进入扫描线时的参考点：该边此刻的 x、所在行，以及深度平面在该点的取值
+	 *
+	 *	深度平面是 z(x,y) = zRef + (yRef - y) * dzy + (x - xRef) * dzx，渲染时直接代入求值。
+	 *	原来是把 z 沿扫描线逐行累加（z += dzx * dxLeft + dzy），这两个增量常常是
+	 *	一对量级相同、符号相反的大数，相减本身就带误差，再乘上成百上千行就积成了
+	 *	可见的深度错误（实测最大越界幅度到过 36.6，而整个视锥才 [-1, 1]）。
+	 */
+	float xRef, zRef;
+	int yRef;
+	float dzx, dzy;
 	int id;
 };
 
