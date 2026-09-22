@@ -8,6 +8,7 @@ BasicHierarchicalZBuffer::BasicHierarchicalZBuffer(int width, int height) {
     m_quadTree = nullptr;
     m_width = width;
     m_height = height;
+    m_dirty = false;
     int pixelNum = m_width * m_height;
     m_image = new unsigned char[pixelNum * 4];
     for (int i = 0; i < pixelNum; i++) {
@@ -37,6 +38,14 @@ void BasicHierarchicalZBuffer::render() const {
 
 void BasicHierarchicalZBuffer::rasterizeScene(Model& model, Scene& scene) {
     m_modelName = model.getModelName();
+    //清空颜色缓冲，使同一个对象可以被安全地重复使用（四叉树/ BVH 会在光栅化时重建）
+    if (m_dirty) {
+    	const int pixelNum = m_width * m_height;
+    	for (int i = 0; i < pixelNum; i++) {
+    		m_image[i * 4] = m_image[i * 4 + 1] = m_image[i * 4 + 2] = 0;
+    	}
+    }
+    m_dirty = true;
     auto start = std::chrono::steady_clock::now();
     buildQuadTree();
     auto end = std::chrono::steady_clock::now();

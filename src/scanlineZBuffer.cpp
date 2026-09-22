@@ -6,6 +6,7 @@
 ScanlineZBuffer::ScanlineZBuffer(int width, int height) {
 	m_width = width;
 	m_height = height;
+	m_dirty = false;
 	int pixelNum = m_width * m_height;
 	m_zBuffer = new float[pixelNum];
 	m_image = new unsigned char[pixelNum * 4];
@@ -47,6 +48,15 @@ void ScanlineZBuffer::render() const {
 
 void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 	m_modelName = model.getModelName();
+	//清空颜色缓冲与 z-Buffer，使同一个对象可以被安全地重复使用
+	if (m_dirty) {
+		const int pixelNum = m_width * m_height;
+		for (int i = 0; i < pixelNum; i++) {
+			m_zBuffer[i] = std::numeric_limits<float>::max();
+			m_image[i * 4] = m_image[i * 4 + 1] = m_image[i * 4 + 2] = 0;
+		}
+	}
+	m_dirty = true;
 	//选择不同的渲染模式可根据不同方法进行渲染
 	//1表示为特化扫描线算法，其余为经典扫描线算法
 	if (mode == 1) {

@@ -40,6 +40,12 @@ private:
 	/*! @brief 最终图像的RGBA数据，每4位代表一个像素的RGBA
 	 */
 	unsigned char* m_image;
+	/*! @brief 缓冲区中是否已有渲染结果
+	 *
+	 *	用于判断同一个对象再次光栅化前是否需要清空缓冲，
+	 *	保证"只渲染其中一种算法"和"依次渲染所有算法"结果一致
+	 */
+	bool m_dirty;
 	/*! @brief 渲染的模型的名称
 	 */
 	std::string m_modelName;
