@@ -53,11 +53,12 @@ void BasicZBuffer::rasterizeScene(Model& model, Scene& scene) {
     model.mvpTransform(scene);
     int faceNum = model.getFaceNum();
     glm::vec3 lightDirection = scene.getLightDirection(), diffuseColor = scene.getDiffuseColor();
+    const float ambient = scene.getAmbient();
     glm::vec3 face[3];
     for (int i = 0; i < faceNum; i++) {
         model.getFace(i, face);
         glm::vec3 normal = glm::normalize(glm::cross(face[1] - face[0], face[2] - face[0]));
-        float diffuseIntensity = glm::max(0.f, glm::dot(normal, lightDirection));
+        float diffuseIntensity = ambient + (1.0f - ambient) * glm::max(0.f, glm::dot(normal, lightDirection));
         model.getMVPFace(i, face);
         rasterizeTriangle(face, diffuseColor * diffuseIntensity);
     }

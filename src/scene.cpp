@@ -1,8 +1,12 @@
 #include "scene.hpp"
 
-Scene::Scene() : m_camera(glm::vec3(0, 0, 1.8)), m_eyeDirection(glm::vec3(0, 0, -1)),
-m_up(glm::vec3(0, 1, 0)),  m_lightDirection(glm::vec3(0, 0, 1)), m_near(-0.3f), m_far(-100), m_fov(90),
-m_diffuseColor(glm::vec3(0.5, 0.5, 0.5)), m_width(1024), m_height(1024)
+Scene::Scene() : Scene(Config{}) {}
+
+Scene::Scene(const Config& config)
+	: m_camera(config.camera), m_eyeDirection(config.eyeDirection), m_up(config.up),
+	  m_lightDirection(config.lightDirection), m_near(config.nearPlane), m_far(config.farPlane),
+	  m_fov(config.fov), m_ambient(config.ambient), m_diffuseColor(config.diffuseColor),
+	  m_width(config.width), m_height(config.height)
 {
     m_mvp = getView() * getProjection() * getViewport();
     m_lightDirection = glm::normalize(m_lightDirection);

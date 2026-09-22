@@ -121,7 +121,7 @@ void HierarchicalZBuffer::rasterizeTriangles(const std::vector<int>& triangles, 
     for (auto it = triangles.begin(); it != triangles.end(); ++it) {
         model.getFace(*it, face);
         glm::vec3 normal = glm::normalize(glm::cross(face[1] - face[0], face[2] - face[0]));
-        float diffuseIntensity = glm::max(0.f, glm::dot(normal, lightDirection));
+        float diffuseIntensity = m_ambient + (1.0f - m_ambient) * glm::max(0.f, glm::dot(normal, lightDirection));
         model.getMVPFace(*it, face);
         for (int j = 0; j < 3; j++) {
             face[j].y = static_cast<float>(static_cast<int>(face[j].y));
@@ -268,6 +268,7 @@ void HierarchicalZBuffer::rasterizeScene(Model& model, Scene& scene) {
 
     start = std::chrono::steady_clock::now();
     glm::vec3 lightDirection = scene.getLightDirection(), diffuseColor = scene.getDiffuseColor();
+    m_ambient = scene.getAmbient();
     if (m_structure == SceneStructure::Octree) {
         const ScreenBounds sb = projectBounds(m_octree->bxmin, m_octree->bxmax, m_octree->bymin, m_octree->bymax, m_octree->bzmin, m_octree->bzmax, m_mvp);
         recursiveRasterizeOctree(m_octree, sb, m_pyramid.rootLevel(), 0, 0, model, lightDirection, diffuseColor);

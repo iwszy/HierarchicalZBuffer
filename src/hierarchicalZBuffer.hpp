@@ -173,6 +173,8 @@ private:
 	ZPyramid m_pyramid;
 	/*! @brief 本帧的 MVP 矩阵，用于把模型空间包围盒投影到屏幕空间 */
 	glm::mat4 m_mvp;
+	/*! @brief 本帧的环境光强度，与单向光一起决定面的亮度 */
+	float m_ambient = 0.0f;
 
 	/*! @brief 渲染窗口宽度、高度 */
 	int m_width, m_height;
