@@ -32,6 +32,16 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
     //与原各算法中的 EPSILON 宏取值一致
     constexpr double kEpsilon = 1e-5;
 
+    //深度一律取 -z，而不是 |z|。
+    //本工程的投影（m_near/m_far 都取负值、配合行向量约定）把近平面映到
+    //z_ndc = +1、远平面映到 -1，是一个"反向 Z"映射：z_ndc 随距离【单调递减】。
+    //而 z-Buffer 的常规约定是"深度越小越近、z-test 用 <"，要求深度随距离【单调递增】，
+    //所以取 -z —— 它把整个视锥线性翻转回来，取值落在 [-1, +1]，与常规深度缓冲一致，
+    //而且数值上就是同一个 float 取负，没有任何额外开销。
+    //反观 |z|：它在 z_ndc 的过零点处把深度次序折叠了一次，该点在本工程中位于
+    //相机前方约 0.6 处 —— 那是视锥【内部】，而不是近平面。任何越过该点的三角形
+    //前后关系都会整体反转，离相机更远的那部分反而会被判为更近。
+
     //将三个顶点根据y的大小降序排序
     if (face[0].y < face[1].y) {
         std::swap(face[0], face[1]);
@@ -112,7 +122,7 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
             if (ixRight >= width) ixRight = width - 1;
             float tempZ = z + dzx * (ixLeft - xLeft);
             for (int x = ixLeft; x <= ixRight; x++) {
-                float depth = glm::abs(tempZ);
+                float depth = -tempZ;
                 tempZ += dzx;
                 if (!storeDepth(x, y, depth)) {
                     continue;
@@ -159,7 +169,7 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
                 ixRight = width - 1;
             }
             for (int x = ixLeft; x <= ixRight; x++) {
-                float depth = glm::abs(tempZ);
+                float depth = -tempZ;
                 tempZ += dzx;
                 if (!storeDepth(x, y, depth)) {
                     continue;
@@ -184,7 +194,7 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
         if (ixRihgt >= width) ixRihgt = width - 1;
         z += dzx * (ixLeft - xLeft);
         for (int x = ixLeft; x <= ixRihgt; x++) {
-            float depth = glm::abs(z);
+            float depth = -z;
             z += dzx;
             if (!storeDepth(x, ymax, depth)) {
                 continue;

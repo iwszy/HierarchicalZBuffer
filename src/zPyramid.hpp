@@ -175,7 +175,10 @@ public:
 		if (level > rootLevel()) {
 			level = rootLevel();
 		}
-		const float z = glm::min(glm::abs(vertices[0].z), glm::min(glm::abs(vertices[1].z), glm::abs(vertices[2].z)));
+		//深度定义必须与光栅化内核完全一致：统一取 -z（越远越大），而不是 |z|。
+		//否则这条判据和逐像素 z-test 用的就不是同一个量，在 z_ndc 过零点
+		//（相机前方约 0.6 处）附近会把本来更近的三角形剔除掉。
+		const float z = glm::min(-vertices[0].z, glm::min(-vertices[1].z, -vertices[2].z));
 		return z < depthAt(level, vx[0] >> level, vy[0] >> level);
 	}
 

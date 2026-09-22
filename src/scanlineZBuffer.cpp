@@ -159,7 +159,8 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 				xRight = m_width - 1;
 			}
 			for (int j = xLeft; j <= xRight; j++) {
-				depth = glm::abs(z);
+				//深度取 -z（越远越大），与光栅化内核保持一致
+				depth = -z;
 				z += edge.dzx;
 				int index = m_width * i + j;
 				if (m_zBuffer[index] < depth) {

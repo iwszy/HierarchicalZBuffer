@@ -85,11 +85,12 @@ void BasicZBuffer::rasterizeTriangle(glm::vec3* vertices, glm::vec3 color) {
             if (baryCentricCoordinate[0] < 0 || baryCentricCoordinate[1] < 0 || baryCentricCoordinate[2] < 0) {
                 continue;
             }
+            //深度取 -z（越远越大），理由见 triangleRasterizer.hpp 中的说明
             float depth = 0;
             for (int i = 0; i < 3; i++) {
                 depth += vertices[i][2] * baryCentricCoordinate[i];
             }
-            depth = glm::abs(depth);
+            depth = -depth;
             int index = x + y * m_width;
             if (m_zBuffer[index] < depth) {
                 continue;
