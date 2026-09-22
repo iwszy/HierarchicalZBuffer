@@ -108,9 +108,6 @@ private:
 	 */
 	std::chrono::duration<double, std::milli> m_buildBVHTime;
 
-	/*! @brief 构建初始的四叉树
-	 */
-	void buildQuadTree();
 	/*! @brief 构建BVH
 	 *  @param triangles: 三角形ID数组
 	 *  @param left: 该节点对应的三角形ID集合在ID数组的起始索引
@@ -133,18 +130,7 @@ private:
 	 *  @param color: 三角形的颜色
 	 */
 	void rasterizeTriangle(glm::vec3* face, glm::vec3 color);
-	/*! @brief 更新四叉树
-	 *
-	 *  根据给定的四叉树节点向上更新深度值
-	 *
-	 *  @param node: 要更新的四叉树节点
-	 */
-	void update(QuadNode* node);
-	/*! @brief 判断三角形是否需要光栅化
-	 *  @param[in] vertices: 三角形的顶点数组
-	 *	@return 是否需要光栅化三角形
-	 */
-	bool isNeedRasterize(glm::vec3* vertices) const;
+
 	/*! @brief 划分数组
 	 *
 	 *  根据给定位置k将数组划分为以下形式: 数组前k个的值小于等于数组第k个的值，

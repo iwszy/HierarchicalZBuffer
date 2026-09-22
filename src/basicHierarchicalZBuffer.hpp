@@ -67,26 +67,12 @@ private:
 	 */
 	std::chrono::duration<double, std::milli> m_buildTreeTime;
 
-	/*! @brief 构建初始的四叉树
-	 */
-	void buildQuadTree();
 	/*! @brief 光栅化三角形
 	 *  @param face: 三角形的顶点数组
 	 *  @param color: 三角形的颜色
 	 */
 	void rasterizeTriangle(glm::vec3* face, glm::vec3 color);
-	/*! @brief 更新四叉树
-	 *
-	 *  根据给定的四叉树节点向上更新深度值
-	 *
-	 *  @param node: 要更新的四叉树节点
-	 */
-	void update(QuadNode* node);
-	/*! @brief 判断三角形是否需要光栅化
-	 *  @param vertices: 三角形的顶点数组
-	 *	@return 是否需要光栅化三角形
-	 */
-	bool isNeedRasterize(glm::vec3* vertices) const;
+
 };
 
 #endif // !__BASIC_HIERARCHICAL_ZBUFFER_HPP__
