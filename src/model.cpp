@@ -121,8 +121,17 @@ void Model::getMVPFace(int i, glm::vec3 face[3]) const {
 void Model::mvpTransform(Scene& scene) {
 	delete[] m_mvpVertices;
 	m_mvpVertices = new glm::vec3[m_vertexNum];
+	m_vertexValid.assign(m_vertexNum, 1);
+	//这里自己算齐次坐标而不复用 scene.mvpTransform，是为了拿到 w —— 判断顶点是否落在
+	//近平面之内靠的就是它。见 isFaceValid 的说明。
+	const glm::mat4& mvp = scene.getMVP();
+	const float nearDistance = scene.getNear();
 	for (int i = 0; i < m_vertexNum; i++) {
-		m_mvpVertices[i] = scene.mvpTransform(m_vertices[i]);
+		const glm::vec4 transformed = glm::vec4(m_vertices[i], 1.0f) * mvp;
+		if (transformed.w >= -nearDistance) {
+			m_vertexValid[i] = 0;
+		}
+		m_mvpVertices[i] = { transformed.x / transformed.w, transformed.y / transformed.w, transformed.z / transformed.w };
 	}
 }
 

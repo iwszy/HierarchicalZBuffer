@@ -102,7 +102,22 @@ public:
 	void calAxisParamsObject();
 	/*! @brief 清除变换后的顶点数组
 	 */
-	void clear() { delete[] m_mvpVertices; m_mvpVertices = nullptr; }
+	void clear() { delete[] m_mvpVertices; m_mvpVertices = nullptr; m_vertexValid.clear(); }
+	/*! @brief 判断一张面是否值得光栅化
+	 *
+	 *  只要有一个顶点落在近平面之内（离相机比近平面还近），透视除法就会把它的屏幕坐标
+	 *  放大到没有意义，而本工程没有做真正的视锥裁剪 —— 这种面会被光栅化成巨大的多边形
+	 *  并带上毫无意义的深度，把正确的结果整个盖掉。所以整张面直接跳过。
+	 *  自带模型都在相机前方 0.88 以外，默认近平面距离 0.3，不会误伤。
+	 *  @param[in] i: 面的索引
+	 *  @return true 表示该面的三个顶点都在近平面之外
+	 */
+	inline bool isFaceValid(int i) const {
+		if (m_vertexValid.empty()) {
+			return true;
+		}
+		return m_vertexValid[m_faces[i][0]] && m_vertexValid[m_faces[i][1]] && m_vertexValid[m_faces[i][2]];
+	}
 
 	/*! @brief 获取模型的顶点数量
 	 *  @return 模型的顶点数量
@@ -126,6 +141,8 @@ private:
 	/*! @brief 模型进行MVP变换后的顶点数组
 	 */
 	glm::vec3* m_mvpVertices;
+	/*! @brief 每个顶点是否在近平面之外（0 表示离相机太近，含该顶点的面直接跳过） */
+	std::vector<unsigned char> m_vertexValid;
 	/*! @brief 模型的面数组，其中面使用3个顶点的索引进行存储
 	 */
 	std::vector<std::array<int, 3>> m_faces;

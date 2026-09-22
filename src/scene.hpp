@@ -65,6 +65,10 @@ public:
 	 *  @return 渲染窗口高度
 	 */
 	inline int getHeight() const{ return m_height; }
+	/*! @brief 获取近平面离相机的距离（正值）
+	 *  @return 近平面距离
+	 */
+	inline float getNear() const { return -m_near; }
 	/*! @brief 获取环境光强度
 	 *  @return 环境光强度
 	 */

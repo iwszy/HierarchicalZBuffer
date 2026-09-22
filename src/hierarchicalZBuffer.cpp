@@ -119,6 +119,9 @@ bool HierarchicalZBuffer::descendPyramid(const ScreenBounds& sb, int& level, int
 void HierarchicalZBuffer::rasterizeTriangles(const std::vector<int>& triangles, Model& model, const glm::vec3& lightDirection, const glm::vec3& diffuseColor) {
     glm::vec3 face[3];
     for (auto it = triangles.begin(); it != triangles.end(); ++it) {
+        if (!model.isFaceValid(*it)) {
+            continue;   //顶点离相机太近，投影没有意义，整张面跳过
+        }
         model.getFace(*it, face);
         glm::vec3 normal = glm::normalize(glm::cross(face[1] - face[0], face[2] - face[0]));
         float diffuseIntensity = m_ambient + (1.0f - m_ambient) * glm::max(0.f, glm::dot(normal, lightDirection));

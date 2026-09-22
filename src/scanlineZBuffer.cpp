@@ -68,6 +68,9 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 		const float ambient = scene.getAmbient();
 		glm::vec3 face[3];
 		for (int i = 0; i < faceNum; i++) {
+			if (!model.isFaceValid(i)) {
+				continue;   //顶点离相机太近，投影没有意义，整张面跳过
+			}
 			model.getFace(i, face);
 			glm::vec3 normal = glm::normalize(glm::cross(face[1] - face[0], face[2] - face[0]));
 			float diffuseIntensity = ambient + (1.0f - ambient) * glm::max(0.f, glm::dot(normal, lightDirection));
@@ -229,6 +232,9 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 	const float ambient = scene.getAmbient();
 	glm::vec3 face[3];
 	for (int i = 0; i < faceNum; i++) {
+		if (!model.isFaceValid(i)) {
+			continue;   //顶点离相机太近，投影没有意义，整张面跳过
+		}
 		model.getFace(i, face);
 		glm::vec3 normal = glm::normalize(glm::cross(face[1] - face[0], face[2] - face[0]));
 		float diffuseIntensity = ambient + (1.0f - ambient) * glm::max(0.f, glm::dot(normal, lightDirection));
