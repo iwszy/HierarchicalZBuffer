@@ -12,6 +12,9 @@ Model::Model() {
 	m_objectAxisCenters = nullptr;
 	m_objectAxisMaximums = nullptr;
 	m_objectAxisMinimums = nullptr;
+	m_objectCentroids = nullptr;
+	m_objectZMin = nullptr;
+	m_objectZMax = nullptr;
 }
 
 void Model::loadModel(std::string modelPath) {
@@ -97,6 +100,9 @@ Model::~Model() {
 	delete[] m_objectAxisCenters;
 	delete[] m_objectAxisMaximums;
 	delete[] m_objectAxisMinimums;
+	delete[] m_objectCentroids;
+	delete[] m_objectZMin;
+	delete[] m_objectZMax;
 }
 
 
@@ -158,4 +164,17 @@ void Model::calAxisParamsObject() {
 	m_objectAxisMaximums = new glm::vec3[m_faceNum];
 	m_objectAxisMinimums = new glm::vec3[m_faceNum];
 	calAxisParamsImpl(m_vertices.data(), m_objectAxisCenters, m_objectAxisMaximums, m_objectAxisMinimums);
+	//真实中心：z 轴不取绝对值，供八叉树做三维空间划分
+	delete[] m_objectCentroids;
+	m_objectCentroids = new glm::vec3[m_faceNum];
+	delete[] m_objectZMin;
+	delete[] m_objectZMax;
+	m_objectZMin = new float[m_faceNum];
+	m_objectZMax = new float[m_faceNum];
+	for (int i = 0; i < m_faceNum; i++) {
+		const std::array<int, 3>& idx = m_faces[i];
+		m_objectCentroids[i] = (m_vertices[idx[0]] + m_vertices[idx[1]] + m_vertices[idx[2]]) / 3.0f;
+		m_objectZMin[i] = glm::min(m_vertices[idx[0]].z, glm::min(m_vertices[idx[1]].z, m_vertices[idx[2]].z));
+		m_objectZMax[i] = glm::max(m_vertices[idx[0]].z, glm::max(m_vertices[idx[1]].z, m_vertices[idx[2]].z));
+	}
 }

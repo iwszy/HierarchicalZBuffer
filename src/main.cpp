@@ -39,6 +39,13 @@ int main() {
         hierarchicalZBuffer.rasterizeScene(models[i], scene);
         hierarchicalZBuffer.render();
         hierarchicalZBuffer.showInfo();
+        models[i].clear();
+        //完整模式的另一种场景加速结构：八叉树
+        HierarchicalZBuffer octreeZBuffer(scene.getWidth(), scene.getHeight());
+        octreeZBuffer.setSceneStructure(HierarchicalZBuffer::SceneStructure::Octree);
+        octreeZBuffer.rasterizeScene(models[i], scene);
+        octreeZBuffer.render();
+        octreeZBuffer.showInfo();
     }
     delete[] models;
     return 0;
