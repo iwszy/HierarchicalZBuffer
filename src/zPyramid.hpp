@@ -4,6 +4,9 @@
 #include <vector>
 #include <algorithm>
 #include <limits>
+#if defined(_MSC_VER)
+#include <intrin.h>
+#endif
 #include <glm/glm.hpp>
 
 /*! @brief 空区域的深度值（即"这里还没有任何几何"） */
@@ -69,6 +72,21 @@ public:
 	size_t cellNum() const { return m_data.size(); }
 	size_t memoryBytes() const {
 		return m_data.size() * sizeof(float) + (m_levelWidth.size() + m_levelHeight.size() + m_offset.size()) * sizeof(int);
+	}
+
+	/*! @brief 返回非零整数最高置位的位置（最低位记为 0）
+	 *
+	 *  MSVC 用 _BitScanReverse（x64 上就是一条 bsr 指令），
+	 *  其它编译器用 __builtin_clz 等价实现。
+	 */
+	static int highestBit(unsigned int v) {
+#if defined(_MSC_VER)
+		unsigned long index = 0;
+		_BitScanReverse(&index, v);
+		return static_cast<int>(index);
+#else
+		return 31 - __builtin_clz(v);
+#endif
 	}
 
 	/*! @brief 读取某个像素（第 0 层）的深度 */
@@ -143,15 +161,19 @@ public:
 			vx[i] = glm::clamp(static_cast<int>(vertices[i].x), 0, m_width - 1);
 			vy[i] = glm::clamp(static_cast<int>(vertices[i].y), 0, m_height - 1);
 		}
-		int level = 0;
-		const int top = rootLevel();
-		while (level < top) {
-			const int x0 = vx[0] >> level, x1 = vx[1] >> level, x2 = vx[2] >> level;
-			const int y0 = vy[0] >> level, y1 = vy[1] >> level, y2 = vy[2] >> level;
-			if (x0 == x1 && x1 == x2 && y0 == y1 && y1 == y2) {
-				break;
-			}
-			level++;
+		//第 L 层的单元编号就是像素坐标右移 L 位，所以"三个像素同属一个单元"
+		//等价于"三个坐标右移 L 位后全部相等"；而最小的这样的 L 就是
+		//【三个坐标最高的不同二进制位 + 1】——异或把所有不同的位标出来，
+		//最高置位就是 h，于是 L = h + 1。
+		//
+		//这条恒等式与屏幕尺寸无关：单元边界永远是 2^L 的倍数，即使宽高不是 2 的
+		//幂次（最后一列/行不足 2^L 像素）也成立；而且像素值 < 2^rootLevel，
+		//所以 h + 1 不会超过 rootLevel。
+		const unsigned int diff = static_cast<unsigned int>(
+			(vx[0] ^ vx[1]) | (vx[0] ^ vx[2]) | (vy[0] ^ vy[1]) | (vy[0] ^ vy[2]));
+		int level = (diff == 0) ? 0 : (highestBit(diff) + 1);
+		if (level > rootLevel()) {
+			level = rootLevel();
 		}
 		const float z = glm::min(glm::abs(vertices[0].z), glm::min(glm::abs(vertices[1].z), glm::abs(vertices[2].z)));
 		return z < depthAt(level, vx[0] >> level, vy[0] >> level);
