@@ -8,7 +8,7 @@ m_diffuseColor(glm::vec3(0.5, 0.5, 0.5)), m_width(1024), m_height(1024)
     m_lightDirection = glm::normalize(m_lightDirection);
 }
 
-glm::vec3 Scene::mvpTransform(glm::vec3& vec) const{
+glm::vec3 Scene::mvpTransform(const glm::vec3& vec) const{
     //将向量转为齐次坐标后再变换再转为真实坐标
     glm::vec4 vec1 = glm::vec4(vec, 1.0f) * m_mvp;
     return { vec1.x / vec1.w, vec1.y / vec1.w, vec1.z / vec1.w };

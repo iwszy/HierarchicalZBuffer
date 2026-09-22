@@ -60,6 +60,23 @@ public:
 	/*! @brief 计算所有面的所有轴的中心位置、最大值、最小值
 	 */
 	void calAxisParams();
+	/*! @brief 根据面的索引以及给定的轴获取对应三角形【模型空间】指定轴的中心位置
+	 *  @param i: 面索引
+	 *  @param axis: 轴(0表示x轴，1表示y轴，2表示z轴)
+	 *	@return 模型空间下指定轴的中心位置
+	 */
+	float getObjectAxisCenter(int i, int axis) const { return m_objectAxisCenters[i][axis]; }
+	/*! @brief 根据面的索引以及给定的轴获取对应三角形【模型空间】指定轴的最大值
+	 */
+	float getObjectAxisMaximum(int i, int axis) const { return m_objectAxisMaximums[i][axis]; }
+	/*! @brief 根据面的索引以及给定的轴获取对应三角形【模型空间】指定轴的最小值
+	 */
+	float getObjectAxisMinimum(int i, int axis) const { return m_objectAxisMinimums[i][axis]; }
+	/*! @brief 计算模型空间下所有面的中心、最大值、最小值
+	 *
+	 *	与相机无关，供"建在模型空间、可以跨帧复用"的 BVH 使用
+	 */
+	void calAxisParamsObject();
 	/*! @brief 清除变换后的顶点数组
 	 */
 	void clear() { delete[] m_mvpVertices; m_mvpVertices = nullptr; }
@@ -98,15 +115,22 @@ private:
 	/*! @brief 三角形各个轴的最小值的数组
 	 */
 	glm::vec3* m_axisMinimums;
+	/*! @brief 模型空间下三角形各个轴的中心、最大值、最小值的数组
+	 */
+	glm::vec3* m_objectAxisCenters;
+	glm::vec3* m_objectAxisMaximums;
+	glm::vec3* m_objectAxisMinimums;
 	/*! @brief 模型名称
 	 */
 	std::string m_modelName;
 
-	/*! @brief 根据面的索引以及给定的轴计算对应三角形指定轴的中心位置、最大值、最小值
-	 *  @param i: 面索引
-	 *  @param axis: 轴(0表示x轴，1表示y轴，2表示z轴)
+	/*! @brief 计算所有面的轴向包围盒的公共实现
+	 *  @param verts: 顶点数组（模型空间或屏幕空间）
+	 *  @param centers: 接收中心位置
+	 *  @param maximums: 接收最大值
+	 *  @param minimums: 接收最小值
 	 */
-	void calAxisParam(int i, int axis) const;
+	void calAxisParamsImpl(const glm::vec3* verts, glm::vec3* centers, glm::vec3* maximums, glm::vec3* minimums) const;
 };
 
 #endif // __MODEL_HPP__

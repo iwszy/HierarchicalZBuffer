@@ -18,7 +18,11 @@ public:
 	 *  @param[in] vec: 要进行变换的向量
 	 *  @return MVP变换后的向量
 	 */
-	glm::vec3 mvpTransform(glm::vec3& vec) const;
+	glm::vec3 mvpTransform(const glm::vec3& vec) const;
+	/*! @brief 获取 MVP 变换矩阵（用于把模型空间包围盒投影到屏幕空间）
+	 *  @return MVP 变换矩阵
+	 */
+	inline const glm::mat4& getMVP() const { return m_mvp; }
 	/*! @brief 获取光线方向
 	 *  @return 光线方向
 	 */

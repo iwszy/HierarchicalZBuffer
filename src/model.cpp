@@ -9,6 +9,9 @@ Model::Model() {
 	m_axisCenters = nullptr;
 	m_axisMaximums = nullptr;
 	m_axisMinimums = nullptr;
+	m_objectAxisCenters = nullptr;
+	m_objectAxisMaximums = nullptr;
+	m_objectAxisMinimums = nullptr;
 }
 
 void Model::loadModel(std::string modelPath) {
@@ -91,6 +94,9 @@ Model::~Model() {
 	delete[] m_axisCenters;
 	delete[] m_axisMaximums;
 	delete[] m_axisMinimums;
+	delete[] m_objectAxisCenters;
+	delete[] m_objectAxisMaximums;
+	delete[] m_objectAxisMinimums;
 }
 
 
@@ -114,6 +120,26 @@ void Model::mvpTransform(Scene& scene) {
 	}
 }
 
+void Model::calAxisParamsImpl(const glm::vec3* verts, glm::vec3* centers, glm::vec3* maximums, glm::vec3* minimums) const {
+	for (int i = 0; i < m_faceNum; i++) {
+		const std::array<int, 3>& idx = m_faces[i];
+		for (int axis = 0; axis < 3; axis++) {
+			float min, max;
+			if (axis == 2) {
+				//z 轴取绝对值：深度缓冲区里用的是 |z|，越远值越大
+				max = glm::max(glm::abs(verts[idx[0]].z), glm::max(glm::abs(verts[idx[1]].z), glm::abs(verts[idx[2]].z)));
+				min = glm::min(glm::abs(verts[idx[0]].z), glm::min(glm::abs(verts[idx[1]].z), glm::abs(verts[idx[2]].z)));
+			} else {
+				max = glm::max(verts[idx[0]][axis], glm::max(verts[idx[1]][axis], verts[idx[2]][axis]));
+				min = glm::min(verts[idx[0]][axis], glm::min(verts[idx[1]][axis], verts[idx[2]][axis]));
+			}
+			maximums[i][axis] = max;
+			minimums[i][axis] = min;
+			centers[i][axis] = (max + min) / 2;
+		}
+	}
+}
+
 void Model::calAxisParams() {
 	delete[] m_axisCenters;
 	delete[] m_axisMaximums;
@@ -121,30 +147,15 @@ void Model::calAxisParams() {
 	m_axisCenters = new glm::vec3[m_faceNum];
 	m_axisMaximums = new glm::vec3[m_faceNum];
 	m_axisMinimums = new glm::vec3[m_faceNum];
-	for (int i = 0; i < m_faceNum; i++) {
-		m_axisCenters[i] = glm::vec3(1.0f);
-		m_axisMaximums[i] = glm::vec3(1.0f);
-		m_axisMinimums[i] = glm::vec3(1.0f);
-	}
-	for (int i = 0; i < m_faceNum; i++) {
-		for (int j = 0; j < 3; j++){
-			calAxisParam(i, j);
-		}
-	}
+	calAxisParamsImpl(m_mvpVertices, m_axisCenters, m_axisMaximums, m_axisMinimums);
 }
 
-void Model::calAxisParam(int i, int axis) const{
-	const std::array<int, 3>& vertices = m_faces[i];
-	float max, min;
-	if (axis == 2) {
-		max = glm::max(glm::abs(m_mvpVertices[vertices[0]].z), glm::max(glm::abs(m_mvpVertices[vertices[1]].z), glm::abs(m_mvpVertices[vertices[2]].z)));
-		min = glm::min(glm::abs(m_mvpVertices[vertices[0]].z), glm::min(glm::abs(m_mvpVertices[vertices[1]].z), glm::abs(m_mvpVertices[vertices[2]].z)));
-	}else {
-		max = glm::max(m_mvpVertices[vertices[0]][axis], glm::max(m_mvpVertices[vertices[1]][axis], m_mvpVertices[vertices[2]][axis]));
-		min = glm::min(m_mvpVertices[vertices[0]][axis], glm::min(m_mvpVertices[vertices[1]][axis], m_mvpVertices[vertices[2]][axis]));
-	}
-	m_axisMaximums[i][axis] = max;
-	m_axisMinimums[i][axis] = min;
-	m_axisCenters[i][axis] = (max + min) / 2;
+void Model::calAxisParamsObject() {
+	delete[] m_objectAxisCenters;
+	delete[] m_objectAxisMaximums;
+	delete[] m_objectAxisMinimums;
+	m_objectAxisCenters = new glm::vec3[m_faceNum];
+	m_objectAxisMaximums = new glm::vec3[m_faceNum];
+	m_objectAxisMinimums = new glm::vec3[m_faceNum];
+	calAxisParamsImpl(m_vertices.data(), m_objectAxisCenters, m_objectAxisMaximums, m_objectAxisMinimums);
 }
-
