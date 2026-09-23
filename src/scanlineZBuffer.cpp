@@ -74,7 +74,11 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 			glm::vec3 tris[6];
 			const int triNum = model.getClippedTriangles(i, scene.getMVP(), scene.getNear(), tris);
 			for (int t = 0; t < triNum; t++) {
-				rasterizeTriangle(tris + t * 3, diffuseColor * diffuseIntensity);
+				glm::vec3* tri = tris + t * 3;
+				for (int j = 0; j < 3; j++) {
+					tri[j].y = static_cast<float>(static_cast<int>(tri[j].y));
+				}
+				rasterizeTriangle(tri, diffuseColor * diffuseIntensity);
 			}
 		}
 		auto end = std::chrono::steady_clock::now();
@@ -239,6 +243,9 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 		for (int t = 0; t < triNum; t++) {
 			glm::vec3* tri = tris + t * 3;
 			const int id = triId++;
+			for (int j = 0; j < 3; j++) {
+				tri[j].y = static_cast<float>(static_cast<int>(tri[j].y));
+			}
 			for (int j = 0; j < 3; j++) {
 				faceDiff[j] = (tri[j].y - tri[(j + 1) % 3].y);
 			}

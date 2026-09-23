@@ -125,7 +125,12 @@ public:
 	 *  @return 多边形顶点数；小于 3 表示整张面都在近平面之内、被完全裁掉
 	 */
 	int getClippedFace(int i, const glm::mat4& mvp, float nearDistance, glm::vec3 out[4]) const;
-	/*! @brief 把一张面裁剪并三角化成 0~2 个屏幕坐标的三角形（顶点 y 已取整）
+	/*! @brief 把一张面裁剪并三角化成 0~2 个屏幕坐标的三角形
+	 *
+	 *  注意这里【不】对顶点 y 取整：扫描线类算法需要取整（否则共享边会算出不同的起始
+	 *  扫描行、屏幕上出现裂缝），而普通 z-Buffer 用的是重心坐标包围盒、不需要，
+	 *  取了反而会让它的输出变化。所以取整由各调用方自己决定。
+
 	 *  @param[in] i: 面的索引
 	 *  @param[in] mvp: 本帧的 MVP 矩阵
 	 *  @param[in] nearDistance: 近平面离相机的距离（正值）

@@ -152,11 +152,6 @@ int Model::getClippedTriangles(int i, const glm::mat4& mvp, float nearDistance, 
 	if (count < 3) {
 		return 0;
 	}
-	for (int j = 0; j < count; j++) {
-		//顶点 y 坐标取整：相邻三角形共享一条边，不取整会因浮点误差让这条边在两张面里
-		//算出不同的起始扫描行，屏幕上会出现裂缝
-		poly[j].y = static_cast<float>(static_cast<int>(poly[j].y));
-	}
 	tri[0] = poly[0]; tri[1] = poly[1]; tri[2] = poly[2];
 	if (count == 4) {
 		tri[3] = poly[0]; tri[4] = poly[2]; tri[5] = poly[3];

@@ -60,6 +60,9 @@ void BasicHierarchicalZBuffer::rasterizeScene(Model& model, Scene& scene) {
         const int triNum = model.getClippedTriangles(i, scene.getMVP(), scene.getNear(), tris);
         for (int t = 0; t < triNum; t++) {
             glm::vec3* tri = tris + t * 3;
+            for (int j = 0; j < 3; j++) {
+                tri[j].y = static_cast<float>(static_cast<int>(tri[j].y));
+            }
             if (m_pyramid.isNeedRasterize(tri)) {
                 rasterizeTriangle(tri, diffuseColor * diffuseIntensity);
             }
