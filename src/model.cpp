@@ -118,46 +118,102 @@ void Model::getMVPFace(int i, glm::vec3 face[3]) const {
 	face[2] = m_mvpVertices[m_faces[i][2]];
 }
 
-int Model::getClippedFace(int i, const glm::mat4& mvp, float nearDistance, glm::vec3 out[4]) const {
-	glm::vec4 clip[3];
-	for (int j = 0; j < 3; j++) {
-		clip[j] = glm::vec4(m_vertices[m_faces[i][j]], 1.0f) * mvp;
-	}
-	//Sutherland-Hodgman：保留 w <= -nearDistance 的那一侧（w 就是 z_cam）
-	const float plane = -nearDistance;
-	glm::vec4 poly[8];
-	int count = 0;
-	for (int j = 0; j < 3; j++) {
-		const glm::vec4& cur = clip[j];
-		const glm::vec4& next = clip[(j + 1) % 3];
-		const bool curIn = cur.w <= plane;
-		const bool nextIn = next.w <= plane;
+/*! @brief 用半空间 dot(normal, v) + offset >= 0 裁剪一个凸多边形
+ *  @return 裁剪后的顶点数
+ */
+static int clipHalfSpace(glm::vec4* poly, int count, const glm::vec4& normal, float offset) {
+	glm::vec4 out[16];
+	int n = 0;
+	for (int j = 0; j < count; j++) {
+		const glm::vec4& cur = poly[j];
+		const glm::vec4& next = poly[(j + 1) % count];
+		const float curDistance = glm::dot(normal, cur) + offset;
+		const float nextDistance = glm::dot(normal, next) + offset;
+		const bool curIn = curDistance >= 0.0f;
+		const bool nextIn = nextDistance >= 0.0f;
 		if (curIn) {
-			poly[count++] = cur;
+			out[n++] = cur;
 		}
 		if (curIn != nextIn) {
-			const float t = (plane - cur.w) / (next.w - cur.w);
-			poly[count++] = cur + t * (next - cur);
+			out[n++] = cur + (curDistance / (curDistance - nextDistance)) * (next - cur);
 		}
 	}
+	for (int j = 0; j < n; j++) {
+		poly[j] = out[j];
+	}
+	return n;
+}
+
+/*! @brief 用屏幕空间的一条边裁剪凸多边形：axis 为 0 表示 x、1 表示 y
+ *
+ *  投影之后三角形在屏幕上的投影仍是三角形，深度也仍然是屏幕坐标的线性函数，
+ *  所以这里对 (x, y) 线性裁剪、z 一起线性插值，结果与在裁剪空间里裁等价且精确。
+ *  @return 裁剪后的顶点数
+ */
+static int clipScreenHalfSpace(glm::vec3* poly, int count, int axis, float bound, bool keepGreater) {
+	glm::vec3 out[16];
+	int n = 0;
+	for (int j = 0; j < count; j++) {
+		const glm::vec3& cur = poly[j];
+		const glm::vec3& next = poly[(j + 1) % count];
+		const float curDistance = keepGreater ? (cur[axis] - bound) : (bound - cur[axis]);
+		const float nextDistance = keepGreater ? (next[axis] - bound) : (bound - next[axis]);
+		const bool curIn = curDistance >= 0.0f;
+		const bool nextIn = nextDistance >= 0.0f;
+		if (curIn) {
+			out[n++] = cur;
+		}
+		if (curIn != nextIn) {
+			out[n++] = cur + (curDistance / (curDistance - nextDistance)) * (next - cur);
+		}
+	}
+	for (int j = 0; j < n; j++) {
+		poly[j] = out[j];
+	}
+	return n;
+}
+
+int Model::getClippedFace(int i, const glm::mat4& mvp, float nearDistance, float screenWidth, float screenHeight, glm::vec3 out[8]) const {
+	glm::vec4 poly[8];
+	for (int j = 0; j < 3; j++) {
+		poly[j] = glm::vec4(m_vertices[m_faces[i][j]], 1.0f) * mvp;
+	}
+	//第一步：近平面。本工程里齐次坐标的 w 就是 z_cam，所以判据只跟 w 有关：
+	//  w <= -nearDistance  <=>  -w - nearDistance >= 0
+	int count = clipHalfSpace(poly, 3, glm::vec4(0.0f, 0.0f, 0.0f, -1.0f), -nearDistance);
+	if (count < 3) return 0;
+	//第二步：透视除法得到屏幕像素坐标。注意视口变换也乘在 mvp 里，所以这里得到的就是
+	//[0,W]x[0,H] 的像素坐标，不是 NDC —— 不能再按 x = ±w 去写侧平面的判据。
 	for (int j = 0; j < count; j++) {
 		out[j] = glm::vec3(poly[j]) / poly[j].w;
 	}
+	//第三步：把屏幕矩形四条边裁掉
+	count = clipScreenHalfSpace(out, count, 0, 0.0f, true);
+	if (count < 3) return 0;
+	count = clipScreenHalfSpace(out, count, 0, screenWidth, false);
+	if (count < 3) return 0;
+	count = clipScreenHalfSpace(out, count, 1, 0.0f, true);
+	if (count < 3) return 0;
+	count = clipScreenHalfSpace(out, count, 1, screenHeight, false);
+	if (count < 3) return 0;
 	return count;
 }
 
-int Model::getClippedTriangles(int i, const glm::mat4& mvp, float nearDistance, glm::vec3 tri[6]) const {
-	glm::vec3 poly[4];
-	const int count = getClippedFace(i, mvp, nearDistance, poly);
+int Model::getClippedTriangles(int i, const glm::mat4& mvp, float nearDistance, float screenWidth, float screenHeight, glm::vec3 tri[24]) const {
+	glm::vec3 poly[8];
+	const int count = getClippedFace(i, mvp, nearDistance, screenWidth, screenHeight, poly);
 	if (count < 3) {
 		return 0;
 	}
-	tri[0] = poly[0]; tri[1] = poly[1]; tri[2] = poly[2];
-	if (count == 4) {
-		tri[3] = poly[0]; tri[4] = poly[2]; tri[5] = poly[3];
-		return 2;
+	//裁剪出来的是凸多边形，按扇形三角化
+	int triangles = 0;
+	for (int t = 1; t + 1 < count; t++) {
+		tri[triangles * 3] = poly[0];
+		tri[triangles * 3 + 1] = poly[t];
+		tri[triangles * 3 + 2] = poly[t + 1];
+		triangles++;
 	}
-	return 1;
+	return triangles;
 }
 
 void Model::mvpTransform(Scene& scene) {

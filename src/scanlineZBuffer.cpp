@@ -71,8 +71,8 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 			model.getFace(i, face);
 			glm::vec3 normal = glm::normalize(glm::cross(face[1] - face[0], face[2] - face[0]));
 			float diffuseIntensity = ambient + (1.0f - ambient) * glm::max(0.f, glm::dot(normal, lightDirection));
-			glm::vec3 tris[6];
-			const int triNum = model.getClippedTriangles(i, scene.getMVP(), scene.getNear(), tris);
+			glm::vec3 tris[24];
+			const int triNum = model.getClippedTriangles(i, scene.getMVP(), scene.getNear(), scene.getWidth(), scene.getHeight(), tris);
 			for (int t = 0; t < triNum; t++) {
 				glm::vec3* tri = tris + t * 3;
 				for (int j = 0; j < 3; j++) {
@@ -232,14 +232,14 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 	glm::vec3 lightDirection = scene.getLightDirection(), diffuseColor = scene.getDiffuseColor();
 	const float ambient = scene.getAmbient();
 	glm::vec3 face[3];
-	glm::vec3 tris[6];
+	glm::vec3 tris[24];
 	int triId = 0;
 	for (int i = 0; i < faceNum; i++) {
 		model.getFace(i, face);
 		glm::vec3 normal = glm::normalize(glm::cross(face[1] - face[0], face[2] - face[0]));
 		float diffuseIntensity = ambient + (1.0f - ambient) * glm::max(0.f, glm::dot(normal, lightDirection));
 		//投影 + 近平面裁剪；被裁成四边形时返回 2 个三角形
-		const int triNum = model.getClippedTriangles(i, scene.getMVP(), scene.getNear(), tris);
+		const int triNum = model.getClippedTriangles(i, scene.getMVP(), scene.getNear(), scene.getWidth(), scene.getHeight(), tris);
 		for (int t = 0; t < triNum; t++) {
 			glm::vec3* tri = tris + t * 3;
 			const int id = triId++;

@@ -63,7 +63,7 @@ static Scene defaultScene() {
  */
 static Scene::Config sponzaConfig() {
     Scene::Config config;
-    config.camera = glm::vec3(0.0f, 0.0f, 0.1f);
+    config.camera = glm::vec3(0.1f, 0.0f, 0.0f);
     config.eyeDirection = glm::vec3(-1.0f, 0.0f, 0.0f);
     config.lightDirection = glm::vec3(1.0f, 0.0f, 0.0f);
     config.nearPlane = -0.02f;

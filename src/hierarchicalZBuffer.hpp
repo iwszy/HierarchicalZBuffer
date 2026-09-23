@@ -177,6 +177,8 @@ private:
 	float m_ambient = 0.0f;
 	/*! @brief 本帧的近平面距离（正值），用于近平面裁剪 */
 	float m_nearDistance = 0.3f;
+	/*! @brief 本帧的渲染窗口尺寸，用于视锥裁剪 */
+	float m_screenWidth = 1024.0f, m_screenHeight = 1024.0f;
 
 	/*! @brief 渲染窗口宽度、高度 */
 	int m_width, m_height;

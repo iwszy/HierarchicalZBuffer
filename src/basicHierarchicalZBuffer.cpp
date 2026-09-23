@@ -56,8 +56,8 @@ void BasicHierarchicalZBuffer::rasterizeScene(Model& model, Scene& scene) {
         model.getFace(i, face);
         glm::vec3 normal = glm::normalize(glm::cross(face[1] - face[0], face[2] - face[0]));
         float diffuseIntensity = ambient + (1.0f - ambient) * glm::max(0.f, glm::dot(normal, lightDirection));
-        glm::vec3 tris[6];
-        const int triNum = model.getClippedTriangles(i, scene.getMVP(), scene.getNear(), tris);
+        glm::vec3 tris[24];
+        const int triNum = model.getClippedTriangles(i, scene.getMVP(), scene.getNear(), scene.getWidth(), scene.getHeight(), tris);
         for (int t = 0; t < triNum; t++) {
             glm::vec3* tri = tris + t * 3;
             for (int j = 0; j < 3; j++) {

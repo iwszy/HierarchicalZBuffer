@@ -121,10 +121,11 @@ public:
 	 *  @param[in] i: 面的索引
 	 *  @param[in] mvp: 本帧的 MVP 矩阵（已含视口变换，除完 w 就是屏幕像素坐标）
 	 *  @param[in] nearDistance: 近平面离相机的距离（正值）
-	 *  @param[out] out: 裁剪后的多边形顶点，最多 4 个
+	 *  @param[in] screenWidth, screenHeight: 渲染窗口尺寸，用于裁掉屏幕矩形之外的部分
+	 *  @param[out] out: 裁剪后的多边形顶点，最多 8 个
 	 *  @return 多边形顶点数；小于 3 表示整张面都在近平面之内、被完全裁掉
 	 */
-	int getClippedFace(int i, const glm::mat4& mvp, float nearDistance, glm::vec3 out[4]) const;
+	int getClippedFace(int i, const glm::mat4& mvp, float nearDistance, float screenWidth, float screenHeight, glm::vec3 out[8]) const;
 	/*! @brief 把一张面裁剪并三角化成 0~2 个屏幕坐标的三角形
 	 *
 	 *  注意这里【不】对顶点 y 取整：扫描线类算法需要取整（否则共享边会算出不同的起始
@@ -134,10 +135,10 @@ public:
 	 *  @param[in] i: 面的索引
 	 *  @param[in] mvp: 本帧的 MVP 矩阵
 	 *  @param[in] nearDistance: 近平面离相机的距离（正值）
-	 *  @param[out] tri: 最多 2 个三角形、共 6 个顶点
+	 *  @param[out] tri: 最多 6 个三角形、共 18 个顶点（缓冲区开 24）
 	 *  @return 三角形个数（0 表示整张面被裁掉）
 	 */
-	int getClippedTriangles(int i, const glm::mat4& mvp, float nearDistance, glm::vec3 tri[6]) const;
+	int getClippedTriangles(int i, const glm::mat4& mvp, float nearDistance, float screenWidth, float screenHeight, glm::vec3 tri[24]) const;
 	/*! @brief 获取模型名称
 	 *  @return 模型名称
 	 */
