@@ -92,6 +92,29 @@ void Model::loadModel(std::string modelPath) {
 	}
 }
 
+void Model::buildModel(const std::vector<glm::vec3>& vertices, const std::vector<std::array<int, 3>>& faces, const std::string& name) {
+	m_modelName = name;
+	m_vertices = vertices;
+	m_faces = faces;
+	m_vertexNum = static_cast<int>(m_vertices.size());
+	m_faceNum = static_cast<int>(m_faces.size());
+	//与 loadModel 相同的归一化：先居中，再按最大坐标绝对值缩放到 [-1,1]^3
+	glm::vec3 minimum = m_vertices[0], maximum = m_vertices[0];
+	for (const glm::vec3& vertex : m_vertices) {
+		minimum = glm::min(minimum, vertex);
+		maximum = glm::max(maximum, vertex);
+	}
+	const glm::vec3 center = (minimum + maximum) * 0.5f;
+	float maxData = 0.0f;
+	for (glm::vec3& vertex : m_vertices) {
+		vertex -= center;
+		maxData = glm::max(maxData, glm::max(glm::abs(vertex.x), glm::max(glm::abs(vertex.y), glm::abs(vertex.z))));
+	}
+	for (glm::vec3& vertex : m_vertices) {
+		vertex /= maxData;
+	}
+}
+
 Model::~Model() {
 	delete[] m_mvpVertices;
 	delete[] m_axisCenters;

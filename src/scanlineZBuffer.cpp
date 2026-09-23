@@ -72,7 +72,7 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 			glm::vec3 normal = glm::normalize(glm::cross(face[1] - face[0], face[2] - face[0]));
 			float diffuseIntensity = ambient + (1.0f - ambient) * glm::max(0.f, glm::dot(normal, lightDirection));
 			glm::vec3 tris[24];
-			const int triNum = model.getClippedTriangles(i, scene.getMVP(), scene.getNear(), scene.getWidth(), scene.getHeight(), tris);
+			const int triNum = model.getClippedTriangles(i, scene.getMVP(), scene.getNear(), static_cast<float>(scene.getWidth()), static_cast<float>(scene.getHeight()), tris);
 			for (int t = 0; t < triNum; t++) {
 				glm::vec3* tri = tris + t * 3;
 				for (int j = 0; j < 3; j++) {
@@ -239,7 +239,7 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 		glm::vec3 normal = glm::normalize(glm::cross(face[1] - face[0], face[2] - face[0]));
 		float diffuseIntensity = ambient + (1.0f - ambient) * glm::max(0.f, glm::dot(normal, lightDirection));
 		//投影 + 近平面裁剪；被裁成四边形时返回 2 个三角形
-		const int triNum = model.getClippedTriangles(i, scene.getMVP(), scene.getNear(), scene.getWidth(), scene.getHeight(), tris);
+		const int triNum = model.getClippedTriangles(i, scene.getMVP(), scene.getNear(), static_cast<float>(scene.getWidth()), static_cast<float>(scene.getHeight()), tris);
 		for (int t = 0; t < triNum; t++) {
 			glm::vec3* tri = tris + t * 3;
 			const int id = triId++;

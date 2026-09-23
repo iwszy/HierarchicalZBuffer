@@ -61,7 +61,7 @@ void BasicZBuffer::rasterizeScene(Model& model, Scene& scene) {
         float diffuseIntensity = ambient + (1.0f - ambient) * glm::max(0.f, glm::dot(normal, lightDirection));
         //投影 + 近平面裁剪；被裁成四边形时返回 2 个三角形
         glm::vec3 tris[24];
-        const int triNum = model.getClippedTriangles(i, scene.getMVP(), scene.getNear(), scene.getWidth(), scene.getHeight(), tris);
+        const int triNum = model.getClippedTriangles(i, scene.getMVP(), scene.getNear(), static_cast<float>(scene.getWidth()), static_cast<float>(scene.getHeight()), tris);
         for (int t = 0; t < triNum; t++) {
             rasterizeTriangle(tris + t * 3, diffuseColor * diffuseIntensity);
         }

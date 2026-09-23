@@ -25,6 +25,15 @@ public:
 	 *  @param modelPath: 模型所在的位置
 	 */
 	void loadModel(std::string modelPath);
+	/*! @brief 直接用顶点和面构建模型（程序内生成的场景用，跳过 OBJ 解析）
+	 *
+	 *  归一化方式与 loadModel 完全一致：先按包围盒中心居中，再按最大坐标绝对值缩放到
+	 *  [-1,1]^3。这样程序内生成的场景与同尺寸的 obj 文件在后续流程里没有区别。
+	 *  @param[in] vertices: 顶点数组
+	 *  @param[in] faces: 面数组，每个面用 3 个顶点索引表示
+	 *  @param[in] name: 模型名（用于输出文件名）
+	 */
+	void buildModel(const std::vector<glm::vec3>& vertices, const std::vector<std::array<int, 3>>& faces, const std::string& name);
 	/*! @brief 根据面的索引获取对应的顶点
 	 *  @param i: 面索引
 	 *  @param[out] face: 面的 3 个顶点，由调用方提供缓冲区
