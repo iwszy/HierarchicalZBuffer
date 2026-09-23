@@ -31,7 +31,11 @@ glm::mat4 Scene::getView() const{
         RView[1][i] = v[i];
         RView[2][i] = w[i];
     }
-    return RView * TView;
+    //行向量约定下，点的变换是 p * (TView * RView) = (p - camera) * RView：
+    //必须【先平移、再旋转】。写成 RView * TView 就变成了 p * RView - camera，
+    //即先旋转、再在世界坐标里减相机位置 —— 只要相机不在原点且朝向不是 (0,0,-1)，
+    //旋转矩阵就不是单位阵，两者结果不同：相机沿 x/z 移动时物体不会正确地变近/变远。
+    return TView * RView;
 }
 
 glm::mat4 Scene::getProjection() const {

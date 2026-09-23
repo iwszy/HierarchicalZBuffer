@@ -118,20 +118,58 @@ void Model::getMVPFace(int i, glm::vec3 face[3]) const {
 	face[2] = m_mvpVertices[m_faces[i][2]];
 }
 
+int Model::getClippedFace(int i, const glm::mat4& mvp, float nearDistance, glm::vec3 out[4]) const {
+	glm::vec4 clip[3];
+	for (int j = 0; j < 3; j++) {
+		clip[j] = glm::vec4(m_vertices[m_faces[i][j]], 1.0f) * mvp;
+	}
+	//Sutherland-Hodgman：保留 w <= -nearDistance 的那一侧（w 就是 z_cam）
+	const float plane = -nearDistance;
+	glm::vec4 poly[8];
+	int count = 0;
+	for (int j = 0; j < 3; j++) {
+		const glm::vec4& cur = clip[j];
+		const glm::vec4& next = clip[(j + 1) % 3];
+		const bool curIn = cur.w <= plane;
+		const bool nextIn = next.w <= plane;
+		if (curIn) {
+			poly[count++] = cur;
+		}
+		if (curIn != nextIn) {
+			const float t = (plane - cur.w) / (next.w - cur.w);
+			poly[count++] = cur + t * (next - cur);
+		}
+	}
+	for (int j = 0; j < count; j++) {
+		out[j] = glm::vec3(poly[j]) / poly[j].w;
+	}
+	return count;
+}
+
+int Model::getClippedTriangles(int i, const glm::mat4& mvp, float nearDistance, glm::vec3 tri[6]) const {
+	glm::vec3 poly[4];
+	const int count = getClippedFace(i, mvp, nearDistance, poly);
+	if (count < 3) {
+		return 0;
+	}
+	for (int j = 0; j < count; j++) {
+		//顶点 y 坐标取整：相邻三角形共享一条边，不取整会因浮点误差让这条边在两张面里
+		//算出不同的起始扫描行，屏幕上会出现裂缝
+		poly[j].y = static_cast<float>(static_cast<int>(poly[j].y));
+	}
+	tri[0] = poly[0]; tri[1] = poly[1]; tri[2] = poly[2];
+	if (count == 4) {
+		tri[3] = poly[0]; tri[4] = poly[2]; tri[5] = poly[3];
+		return 2;
+	}
+	return 1;
+}
+
 void Model::mvpTransform(Scene& scene) {
 	delete[] m_mvpVertices;
 	m_mvpVertices = new glm::vec3[m_vertexNum];
-	m_vertexValid.assign(m_vertexNum, 1);
-	//这里自己算齐次坐标而不复用 scene.mvpTransform，是为了拿到 w —— 判断顶点是否落在
-	//近平面之内靠的就是它。见 isFaceValid 的说明。
-	const glm::mat4& mvp = scene.getMVP();
-	const float nearDistance = scene.getNear();
 	for (int i = 0; i < m_vertexNum; i++) {
-		const glm::vec4 transformed = glm::vec4(m_vertices[i], 1.0f) * mvp;
-		if (transformed.w >= -nearDistance) {
-			m_vertexValid[i] = 0;
-		}
-		m_mvpVertices[i] = { transformed.x / transformed.w, transformed.y / transformed.w, transformed.z / transformed.w };
+		m_mvpVertices[i] = scene.mvpTransform(m_vertices[i]);
 	}
 }
 

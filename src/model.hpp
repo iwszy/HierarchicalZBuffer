@@ -102,23 +102,7 @@ public:
 	void calAxisParamsObject();
 	/*! @brief 清除变换后的顶点数组
 	 */
-	void clear() { delete[] m_mvpVertices; m_mvpVertices = nullptr; m_vertexValid.clear(); }
-	/*! @brief 判断一张面是否值得光栅化
-	 *
-	 *  只要有一个顶点落在近平面之内（离相机比近平面还近），透视除法就会把它的屏幕坐标
-	 *  放大到没有意义，而本工程没有做真正的视锥裁剪 —— 这种面会被光栅化成巨大的多边形
-	 *  并带上毫无意义的深度，把正确的结果整个盖掉。所以整张面直接跳过。
-	 *  自带模型都在相机前方 0.88 以外，默认近平面距离 0.3，不会误伤。
-	 *  @param[in] i: 面的索引
-	 *  @return true 表示该面的三个顶点都在近平面之外
-	 */
-	inline bool isFaceValid(int i) const {
-		if (m_vertexValid.empty()) {
-			return true;
-		}
-		return m_vertexValid[m_faces[i][0]] && m_vertexValid[m_faces[i][1]] && m_vertexValid[m_faces[i][2]];
-	}
-
+	void clear() { delete[] m_mvpVertices; m_mvpVertices = nullptr; }
 	/*! @brief 获取模型的顶点数量
 	 *  @return 模型的顶点数量
 	 */
@@ -127,6 +111,28 @@ public:
 	 *  @return 模型的面数量
 	 */
 	inline int getFaceNum() const { return m_faceNum; }
+	/*! @brief 把一张面变换到屏幕坐标，并对近平面做裁剪
+	 *
+	 *  用 Sutherland-Hodgman 对 z_cam = -nearDistance 这个平面裁剪（本工程的投影里
+	 *  齐次坐标的 w 就等于 z_cam）——三角形被裁掉一部分后会变成四边形，所以返回的是
+	 *  一个 3 或 4 个顶点的凸多边形，调用方按扇形三角化即可。
+	 *  这是「视锥裁剪」的第一步：只做近平面，因为只有它会让透视除法除出没有意义的值
+	 *  （远处的左/右/上/下边界只会让屏幕坐标变大，不会破坏深度的正确性）。
+	 *  @param[in] i: 面的索引
+	 *  @param[in] mvp: 本帧的 MVP 矩阵（已含视口变换，除完 w 就是屏幕像素坐标）
+	 *  @param[in] nearDistance: 近平面离相机的距离（正值）
+	 *  @param[out] out: 裁剪后的多边形顶点，最多 4 个
+	 *  @return 多边形顶点数；小于 3 表示整张面都在近平面之内、被完全裁掉
+	 */
+	int getClippedFace(int i, const glm::mat4& mvp, float nearDistance, glm::vec3 out[4]) const;
+	/*! @brief 把一张面裁剪并三角化成 0~2 个屏幕坐标的三角形（顶点 y 已取整）
+	 *  @param[in] i: 面的索引
+	 *  @param[in] mvp: 本帧的 MVP 矩阵
+	 *  @param[in] nearDistance: 近平面离相机的距离（正值）
+	 *  @param[out] tri: 最多 2 个三角形、共 6 个顶点
+	 *  @return 三角形个数（0 表示整张面被裁掉）
+	 */
+	int getClippedTriangles(int i, const glm::mat4& mvp, float nearDistance, glm::vec3 tri[6]) const;
 	/*! @brief 获取模型名称
 	 *  @return 模型名称
 	 */
@@ -141,8 +147,6 @@ private:
 	/*! @brief 模型进行MVP变换后的顶点数组
 	 */
 	glm::vec3* m_mvpVertices;
-	/*! @brief 每个顶点是否在近平面之外（0 表示离相机太近，含该顶点的面直接跳过） */
-	std::vector<unsigned char> m_vertexValid;
 	/*! @brief 模型的面数组，其中面使用3个顶点的索引进行存储
 	 */
 	std::vector<std::array<int, 3>> m_faces;

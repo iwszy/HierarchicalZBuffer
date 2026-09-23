@@ -175,6 +175,8 @@ private:
 	glm::mat4 m_mvp;
 	/*! @brief 本帧的环境光强度，与单向光一起决定面的亮度 */
 	float m_ambient = 0.0f;
+	/*! @brief 本帧的近平面距离（正值），用于近平面裁剪 */
+	float m_nearDistance = 0.3f;
 
 	/*! @brief 渲染窗口宽度、高度 */
 	int m_width, m_height;

@@ -63,23 +63,23 @@ static Scene defaultScene() {
  */
 static Scene::Config sponzaConfig() {
     Scene::Config config;
-    config.camera = glm::vec3(0.10f, -0.34f, 0.25f);
-    config.eyeDirection = glm::vec3(0.0f, 0.0f, -1.0f);
-    config.lightDirection = glm::vec3(0.0f, 0.0f, 1.0f);
+    config.camera = glm::vec3(0.0f, 0.0f, 0.1f);
+    config.eyeDirection = glm::vec3(-1.0f, 0.0f, 0.0f);
+    config.lightDirection = glm::vec3(1.0f, 0.0f, 0.0f);
     config.nearPlane = -0.02f;
     config.farPlane = -30.0f;
     config.fov = 70.0f;
-    config.ambient = 0.45f;
+    config.ambient = 0.55f;
     return config;
 }
 
 int main(int argc, char** argv) {
-    bool withSponza = false;
-    for (int i = 1; i < argc; i++) {
-        if (std::string(argv[i]) == "--sponza") {
-            withSponza = true;
-        }
-    }
+    bool withSponza = true;
+    //for (int i = 1; i < argc; i++) {
+    //    if (std::string(argv[i]) == "--sponza") {
+    //        withSponza = true;
+    //    }
+    //}
     Scene scene = defaultScene();
     const int modelNum = 6;
     std::string modelPaths[] = { "models/dolphins.obj", "models/african_head.obj", "models/teapot.obj",

@@ -68,17 +68,14 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 		const float ambient = scene.getAmbient();
 		glm::vec3 face[3];
 		for (int i = 0; i < faceNum; i++) {
-			if (!model.isFaceValid(i)) {
-				continue;   //顶点离相机太近，投影没有意义，整张面跳过
-			}
 			model.getFace(i, face);
 			glm::vec3 normal = glm::normalize(glm::cross(face[1] - face[0], face[2] - face[0]));
 			float diffuseIntensity = ambient + (1.0f - ambient) * glm::max(0.f, glm::dot(normal, lightDirection));
-			model.getMVPFace(i, face);
-			for (int j = 0; j < 3; j++) {
-				face[j].y = static_cast<float>(static_cast<int>(face[j].y));
+			glm::vec3 tris[6];
+			const int triNum = model.getClippedTriangles(i, scene.getMVP(), scene.getNear(), tris);
+			for (int t = 0; t < triNum; t++) {
+				rasterizeTriangle(tris + t * 3, diffuseColor * diffuseIntensity);
 			}
-			rasterizeTriangle(face, diffuseColor * diffuseIntensity);
 		}
 		auto end = std::chrono::steady_clock::now();
 		m_renderTime = end - start;
@@ -221,112 +218,113 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 	for (int y = 0; y < m_height; y++) {
 		m_classifyEdgeTables[y].clear();
 	}
-	m_aetSize = 0;
-	m_triSlot.assign(faceNum, -1);
-	if (static_cast<int>(m_aet.size()) < faceNum) {
-		m_aet.resize(faceNum);
+	m_triSlot.assign(faceNum * 2, -1);
+	if (static_cast<int>(m_aet.size()) < faceNum * 2) {
+		m_aet.resize(faceNum * 2);
 	}
-	m_triangles.resize(faceNum);
+	m_triangles.resize(faceNum * 2);
+	m_aetSize = 0;
 	float faceDiff[3];
 	glm::vec3 lightDirection = scene.getLightDirection(), diffuseColor = scene.getDiffuseColor();
 	const float ambient = scene.getAmbient();
 	glm::vec3 face[3];
+	glm::vec3 tris[6];
+	int triId = 0;
 	for (int i = 0; i < faceNum; i++) {
-		if (!model.isFaceValid(i)) {
-			continue;   //顶点离相机太近，投影没有意义，整张面跳过
-		}
 		model.getFace(i, face);
 		glm::vec3 normal = glm::normalize(glm::cross(face[1] - face[0], face[2] - face[0]));
 		float diffuseIntensity = ambient + (1.0f - ambient) * glm::max(0.f, glm::dot(normal, lightDirection));
-		model.getMVPFace(i, face);
-		for (int j = 0; j < 3; j++) {
-			face[j].y = static_cast<float>(static_cast<int>(face[j].y));
-		}
-		for (int j = 0; j < 3; j++) {
-			faceDiff[j] = (face[j].y - face[(j + 1) % 3].y);
-		}
-		//由于使用的是变换后的z值，故使用变换后的三角形计算所在平面的系数
-		float a = faceDiff[0] * (face[0].z - face[2].z) - (face[1].z - face[0].z) * faceDiff[2];
-		float b = (face[1].z - face[0].z) * (face[2].x - face[0].x) - (face[1].x - face[0].x) * (face[2].z - face[0].z);
-		float c = (face[1].x - face[0].x) * faceDiff[2] + faceDiff[0] * (face[2].x - face[0].x);
-		float dzx = -a / c, dzy = b / c;
-		//当三角形面积为0时，c=0，此时需要转为线的方式计算dzx与dzy
-		if (glm::abs(c) < EPSILON) {
-			int minXIndex = 0, maxXIndex = 0, minYIndex = 0, maxYIndex = 0;
-			float minX = face[0].x, maxX = minX, maxY = face[0].y, minY = maxY;
-			for (int j = 1; j < 3; j++) {
-				if (minX > face[j].x) {
-					minX = face[j].x;
-					minXIndex = j;
-				}
-				if (maxX < face[j].x) {
-					maxX = face[j].x;
-					maxXIndex = j;
-				}
-				if (minY > face[j].y) {
-					minY = face[j].y;
-					minYIndex = j;
-				}
-				if (maxY < face[j].y) {
-					maxY = face[j].y;
-					maxYIndex = j;
-				}
+		//投影 + 近平面裁剪；被裁成四边形时返回 2 个三角形
+		const int triNum = model.getClippedTriangles(i, scene.getMVP(), scene.getNear(), tris);
+		for (int t = 0; t < triNum; t++) {
+			glm::vec3* tri = tris + t * 3;
+			const int id = triId++;
+			for (int j = 0; j < 3; j++) {
+				faceDiff[j] = (tri[j].y - tri[(j + 1) % 3].y);
 			}
-			dzx = (face[maxXIndex].z - face[minXIndex].z) / (maxX - minX);
-			dzy = (face[maxYIndex].z - face[minYIndex].z) / (maxY - minY);
-		}
-		//屏幕面积过小的退化三角形直接跳过，理由见 triangleRasterizer.hpp 的说明
-		if (glm::abs(c) < 2.0f * 0.01f) {
-			continue;
-		}
-		m_triangles[i] = { dzx, dzy, diffuseColor * diffuseIntensity };
-		//当三角形三个顶点y值相同时，经典扫描线算法会不渲染这个三角形，此时需要特殊处理
-		//将该三角形跨越的x值作为dx以在渲染时特殊处理
-		if (glm::abs(faceDiff[0]) < EPSILON && glm::abs(faceDiff[1]) < EPSILON) {
-			int minIndex = 0;
-			float minX = face[0].x, maxX = minX;
-			for (int j = 1; j < 3; j++) {
-				if (minX > face[j].x) {
-					minX = face[j].x;
-					minIndex = j;
+			//由于使用的是变换后的z值，故使用变换后的三角形计算所在平面的系数
+			float a = faceDiff[0] * (tri[0].z - tri[2].z) - (tri[1].z - tri[0].z) * faceDiff[2];
+			float b = (tri[1].z - tri[0].z) * (tri[2].x - tri[0].x) - (tri[1].x - tri[0].x) * (tri[2].z - tri[0].z);
+			float c = (tri[1].x - tri[0].x) * faceDiff[2] + faceDiff[0] * (tri[2].x - tri[0].x);
+			float dzx = -a / c, dzy = b / c;
+			//当三角形面积为0时，c=0，此时需要转为线的方式计算dzx与dzy
+			if (glm::abs(c) < EPSILON) {
+				int minXIndex = 0, maxXIndex = 0, minYIndex = 0, maxYIndex = 0;
+				float minX = tri[0].x, maxX = minX, maxY = tri[0].y, minY = maxY;
+				for (int j = 1; j < 3; j++) {
+					if (minX > tri[j].x) {
+						minX = tri[j].x;
+						minXIndex = j;
+					}
+					if (maxX < tri[j].x) {
+						maxX = tri[j].x;
+						maxXIndex = j;
+					}
+					if (minY > tri[j].y) {
+						minY = tri[j].y;
+						minYIndex = j;
+					}
+					if (maxY < tri[j].y) {
+						maxY = tri[j].y;
+						maxYIndex = j;
+					}
 				}
-				if (maxX < face[j].x) {
-					maxX = face[j].x;
-				}
+				dzx = (tri[maxXIndex].z - tri[minXIndex].z) / (maxX - minX);
+				dzy = (tri[maxYIndex].z - tri[minYIndex].z) / (maxY - minY);
 			}
-			int flatY = static_cast<int>(face[0].y);
-			if (flatY >= 0 && flatY < m_height) {
-			    m_classifyEdgeTables[flatY].push_back({minX, maxX - minX, 1, face[minIndex].z,i});
-			}
-			continue;
-		}
-		for (int j = 0; j < 3; j++) {
-			int nextJ = (j + 1) % 3, preJ = (j + 2) % 3, curJ = j;
-			if (glm::abs(faceDiff[j]) < EPSILON) {
+			//屏幕面积过小的退化三角形直接跳过，理由见 triangleRasterizer.hpp 的说明
+			if (glm::abs(c) < 2.0f * 0.01f) {
 				continue;
 			}
-			float dx = (face[nextJ].x - face[j].x) / faceDiff[j];
-			//若face[j]不是上顶点，则交换curJ与nextJ的值。同时当上顶点为非极值点时，将其往下一行
-			if (faceDiff[j] < 0) {
-				std::swap(curJ, nextJ);
+			m_triangles[id] = { dzx, dzy, diffuseColor * diffuseIntensity };
+			//当三角形三个顶点y值相同时，经典扫描线算法会不渲染这个三角形，此时需要特殊处理
+			//将该三角形跨越的x值作为dx以在渲染时特殊处理
+			if (glm::abs(faceDiff[0]) < EPSILON && glm::abs(faceDiff[1]) < EPSILON) {
+				int minIndex = 0;
+				float minX = tri[0].x, maxX = minX;
+				for (int j = 1; j < 3; j++) {
+					if (minX > tri[j].x) {
+						minX = tri[j].x;
+						minIndex = j;
+					}
+					if (maxX < tri[j].x) {
+						maxX = tri[j].x;
+					}
+				}
+				int flatY = static_cast<int>(tri[0].y);
+				if (flatY >= 0 && flatY < m_height) {
+				    m_classifyEdgeTables[flatY].push_back({minX, maxX - minX, 1, tri[minIndex].z, id});
+				}
+				continue;
 			}
-			float x = face[curJ].x;
-			int ymax = static_cast<int>(face[curJ].y), ymin = static_cast<int>(face[nextJ].y);
-			if ((face[curJ].y - face[nextJ].y) * (face[curJ].y - face[preJ].y) < -EPSILON) {
-				ymax--;
-				x += dx;
-			}
-			//把边裁剪到渲染窗口内：起始扫描线在窗口上方时，把 x 的插值推进过去
-			if (ymax >= m_height) {
-			    int skip = ymax - (m_height - 1);
-			    x += dx * skip;
-			    ymax = m_height - 1;
-			}
-			if (ymax >= 0) {
-			    //记录该边进入扫描线时的参考点 (x, ymax)，以及深度平面在该点的取值。
-			    //渲染时用平面方程直接求值，不再沿扫描线逐行累加
-			    const float zRef = face[curJ].z + (face[curJ].y - ymax) * dzy + (x - face[curJ].x) * dzx;
-			    m_classifyEdgeTables[ymax].push_back({ x, dx, ymax - ymin + 1, zRef, i });
+			for (int j = 0; j < 3; j++) {
+				int nextJ = (j + 1) % 3, preJ = (j + 2) % 3, curJ = j;
+				if (glm::abs(faceDiff[j]) < EPSILON) {
+					continue;
+				}
+				float dx = (tri[nextJ].x - tri[j].x) / faceDiff[j];
+				//若tri[j]不是上顶点，则交换curJ与nextJ的值。同时当上顶点为非极值点时，将其往下一行
+				if (faceDiff[j] < 0) {
+					std::swap(curJ, nextJ);
+				}
+				float x = tri[curJ].x;
+				int ymax = static_cast<int>(tri[curJ].y), ymin = static_cast<int>(tri[nextJ].y);
+				if ((tri[curJ].y - tri[nextJ].y) * (tri[curJ].y - tri[preJ].y) < -EPSILON) {
+					ymax--;
+					x += dx;
+				}
+				//把边裁剪到渲染窗口内：起始扫描线在窗口上方时，把 x 的插值推进过去
+				if (ymax >= m_height) {
+				    int skip = ymax - (m_height - 1);
+				    x += dx * skip;
+				    ymax = m_height - 1;
+				}
+				if (ymax >= 0) {
+				    //记录该边进入扫描线时的参考点 (x, ymax)，以及深度平面在该点的取值。
+				    //渲染时用平面方程直接求值，不再沿扫描线逐行累加
+				    const float zRef = tri[curJ].z + (tri[curJ].y - ymax) * dzy + (x - tri[curJ].x) * dzx;
+				    m_classifyEdgeTables[ymax].push_back({ x, dx, ymax - ymin + 1, zRef, id });
+				}
 			}
 		}
 	}

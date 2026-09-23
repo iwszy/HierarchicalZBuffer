@@ -56,14 +56,15 @@ void BasicZBuffer::rasterizeScene(Model& model, Scene& scene) {
     const float ambient = scene.getAmbient();
     glm::vec3 face[3];
     for (int i = 0; i < faceNum; i++) {
-    if (!model.isFaceValid(i)) {
-        continue;   //顶点离相机太近，投影没有意义，整张面跳过
-    }
         model.getFace(i, face);
         glm::vec3 normal = glm::normalize(glm::cross(face[1] - face[0], face[2] - face[0]));
         float diffuseIntensity = ambient + (1.0f - ambient) * glm::max(0.f, glm::dot(normal, lightDirection));
-        model.getMVPFace(i, face);
-        rasterizeTriangle(face, diffuseColor * diffuseIntensity);
+        //投影 + 近平面裁剪；被裁成四边形时返回 2 个三角形
+        glm::vec3 tris[6];
+        const int triNum = model.getClippedTriangles(i, scene.getMVP(), scene.getNear(), tris);
+        for (int t = 0; t < triNum; t++) {
+            rasterizeTriangle(tris + t * 3, diffuseColor * diffuseIntensity);
+        }
     }
     auto end = std::chrono::steady_clock::now();
     m_renderTime = end - start;
