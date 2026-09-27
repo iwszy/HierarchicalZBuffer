@@ -1,6 +1,7 @@
 #ifndef __TRIANGLE_RASTERIZER_HPP__
 #define __TRIANGLE_RASTERIZER_HPP__
 
+#include <cmath>
 #include <utility>
 #include <glm/glm.hpp>
 
@@ -106,11 +107,10 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
         const float dy = refY - y;
         return -(refZ + (dy == 0.0f ? 0.0f : dy * dzy) + (x - refX) * dzx);
     };
-    //像素范围是由浮点边界向零截断（static_cast<int>）得到的，最左/最右那个像素
-    //可能落在扫描行的真实跨度之外最多 1 像素。对普通三角形这点外推无所谓，
-    //但三角形越窄长 |dzx| 越大（实测可以到几十），外推出去深度会被甩到
-    //[-1, 1] 之外（实测出现过 +18.9 和 -37.2）。
-    //把求值位置夹回跨度之内即可：对跨度内的像素夹取是恒等变换，取值完全不变。
+    //求值位置仍夹回跨度之内。跨度端点现在是 ceil/floor，落进跨度的像素本来就满足
+    //xLeft <= x <= xRight，所以这一步是恒等变换；留着它是为了兜住 |dzx| 极大的窄长
+    //三角形 —— 那种情况下插值本身的误差（实测 1.3e-5 ~ 1.2e-3）乘上 |dzx| 仍可能
+    //把深度甩到 [-1, 1] 之外（早期版本向零截断导致最多外推 1 像素时，实测出现过 +18.9 / -37.2）。
     auto clampToSpan = [](float x, float lo, float hi) {
         return x < lo ? lo : (x > hi ? hi : x);
     };
@@ -136,7 +136,23 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
         }
         z = face[0].z;
     }
-    int ymax = static_cast<int>(face[0].y), ymid = static_cast<int>(face[1].y), ymin = static_cast<int>(face[2].y);
+    //采样点取整数格点 (x, y)，与朴素 z-Buffer 的 barycentric 判定（see basicZBuffer.cpp）一致：
+    //一行/一列只有格点真的落在三角形里才该被画。所以上界取 floor、下界取 ceil —— 原来的
+    //向零截断会把三角形之外最多 1 行/1 列的像素也算进来，而那一行上的深度是平面方程
+    //外推出来的：轴对齐的面上它有可能是【逐位等于】邻面深度的值（详见 NOTES.md 里
+    //"黑线"的排查），于是这些越界像素会和邻面打成平手，谁后画谁赢。
+    int ymax = static_cast<int>(std::floor(face[0].y));
+    int ymin = static_cast<int>(std::ceil(face[2].y));
+    //上半部分处理 [ymid, ymax]、下半部分处理 [ymin, ymid - 1]；上平底时上半部分不存在
+    int ymid = isTopFlat ? ymax : static_cast<int>(std::ceil(face[1].y));
+    if (ymid < ymin) {
+        ymid = ymin;
+    }
+    //把跨度参考点从顶点推进到第一条采样线：采样线的 y 是整数、顶点 y 一般不是，
+    //少了这一步，第一条采样线上的跨度会退化成"顶点处的一个点"，顶端那一行的像素会漏掉
+    const float dyTop = face[0].y - static_cast<float>(ymax);
+    xLeft += dxleft * dyTop;
+    xRight += dxRight * dyTop;
     if (!isTopFlat) {
         //如果不是上平底，则执行以下循环，使用扫描线的思想完成上半部分三角形的光栅化
         for (int y = ymax; y >= ymid; y--) {
@@ -146,7 +162,9 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
                 xRight += dxRight;
                 continue;
             }
-            int ixLeft = static_cast<int>(xLeft), ixRight = static_cast<int>(xRight);
+            //跨度端点同样取 ceil / floor：整数格点落在跨度之外的那个像素本来就不属于三角形。
+            //两个相邻三角形共享一条边时，一边的 floor 与另一边的 ceil 恰好相邻，不会留缝
+            int ixLeft = static_cast<int>(std::ceil(xLeft)), ixRight = static_cast<int>(std::floor(xRight));
             if (ixLeft < 0) ixLeft = 0;
             if (ixRight >= width) ixRight = width - 1;
             for (int x = ixLeft; x <= ixRight; x++) {
@@ -167,12 +185,14 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
         //如果不是下平底，则执行以下操作，使用扫描线的思想完成下半部分三角形的光栅化
         if (!isTopFlat) {
             //如果不是上平底，则需要根据边face[0]-face[2]与边face[1]-face[2]的左右关系更新相关参数，同时对于非极值点也要将扫描线往下一行
+            //中间顶点到下半部分第一条采样线的行数：顶点 y 一般不是整数，不能用"走一步"代替
+            const float dyMid = 1.0f - (static_cast<float>(ymid) - face[1].y);
             if (isLongAtLeft) {
                 dxRight = (face[2].x - face[1].x) / faceDiff[1];
-                xRight = face[1].x + dxRight;
+                xRight = face[1].x + dxRight * dyMid;
             } else {
                 dxleft = (face[2].x - face[1].x) / faceDiff[1];
-                xLeft = face[1].x + dxleft;
+                xLeft = face[1].x + dxleft * dyMid;
             }
             ymid--;
         }
@@ -183,7 +203,7 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
                 xRight += dxRight;
                 continue;
             }
-            int ixLeft = static_cast<int>(xLeft), ixRight = static_cast<int>(xRight);
+            int ixLeft = static_cast<int>(std::ceil(xLeft)), ixRight = static_cast<int>(std::floor(xRight));
             if (ixLeft < 0) ixLeft = 0;
             if (ixRight >= width) ixRight = width - 1;
             for (int x = ixLeft; x <= ixRight; x++) {
@@ -207,8 +227,8 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
         }
         const float lineMinX = glm::min(face[0].x, glm::min(face[1].x, face[2].x));
         const float lineMaxX = glm::max(face[0].x, glm::max(face[1].x, face[2].x));
-        int ixLeft = static_cast<int>(lineMinX);
-        int ixRihgt = static_cast<int>(lineMaxX);
+        int ixLeft = static_cast<int>(std::ceil(lineMinX));
+        int ixRihgt = static_cast<int>(std::floor(lineMaxX));
         if (ixLeft < 0) ixLeft = 0;
         if (ixRihgt >= width) ixRihgt = width - 1;
         for (int x = ixLeft; x <= ixRihgt; x++) {

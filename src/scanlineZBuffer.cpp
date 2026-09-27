@@ -1,4 +1,5 @@
 #include "scanlineZBuffer.hpp"
+#include <cmath>
 #include <iostream>
 #include "stb_image.hpp"
 #include "stb_image_write.hpp"
@@ -72,9 +73,7 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 			const int triNum = model.getClippedTriangles(i, scene.getMVP(), scene.getNear(), static_cast<float>(scene.getWidth()), static_cast<float>(scene.getHeight()), tris);
 			for (int t = 0; t < triNum; t++) {
 				glm::vec3* tri = tris + t * 3;
-				for (int j = 0; j < 3; j++) {
-					tri[j].y = static_cast<float>(static_cast<int>(tri[j].y));
-				}
+				//顶点 y 不再取整：它走共享光栅化内核，覆盖范围已按整数格点精确判定
 				rasterizeTriangle(tri, diffuseColor * diffuseIntensity);
 			}
 		}
@@ -156,7 +155,7 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 			//当识别到该边对只有1条边，表示该边对应的三角形只跨越1条扫描线，此时直接从左向右扫描三角形
 			const float spanLeft = edge.xLeft;
 			const float spanRight = (edge.dyRight == -1) ? (edge.xLeft + edge.dxLeft) : edge.xRight;
-			int xLeft = static_cast<int>(spanLeft), xRight = static_cast<int>(spanRight);
+			int xLeft = static_cast<int>(std::ceil(spanLeft)), xRight = static_cast<int>(std::floor(spanRight));
 			//把扫描线裁剪到渲染窗口内，避免越界写入 m_zBuffer / m_image
 			if (xLeft < 0) {
 				xLeft = 0;
@@ -240,6 +239,14 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 		for (int t = 0; t < triNum; t++) {
 			glm::vec3* tri = tris + t * 3;
 			const int id = triId++;
+			//顶点 y 仍旧取整：经典算法的行号、边对计数都建立在整数扫描线上。
+			//但边的 x 与深度平面一律用【未取整】的真实顶点来算 —— 取整只是把几何
+			//整体下移最多 1 像素，用它拟合并求值会得到偏小的深度，越界覆盖到的那一行
+			//就把本该属于邻面的像素抢走（见 NOTES.md 里黑线的排查）。
+			const float trueX[3] = { tri[0].x, tri[1].x, tri[2].x };
+			const float trueY[3] = { tri[0].y, tri[1].y, tri[2].y };
+			const float trueZ[3] = { tri[0].z, tri[1].z, tri[2].z };
+			const int rowMin = static_cast<int>(std::ceil(glm::min(trueY[0], glm::min(trueY[1], trueY[2]))));
 			for (int j = 0; j < 3; j++) {
 				tri[j].y = static_cast<float>(static_cast<int>(tri[j].y));
 			}
@@ -247,9 +254,10 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 				faceDiff[j] = (tri[j].y - tri[(j + 1) % 3].y);
 			}
 			//由于使用的是变换后的z值，故使用变换后的三角形计算所在平面的系数
-			float a = faceDiff[0] * (tri[0].z - tri[2].z) - (tri[1].z - tri[0].z) * faceDiff[2];
-			float b = (tri[1].z - tri[0].z) * (tri[2].x - tri[0].x) - (tri[1].x - tri[0].x) * (tri[2].z - tri[0].z);
-			float c = (tri[1].x - tri[0].x) * faceDiff[2] + faceDiff[0] * (tri[2].x - tri[0].x);
+			const float trueDiff[3] = { trueY[0] - trueY[1], trueY[1] - trueY[2], trueY[2] - trueY[0] };
+			float a = trueDiff[0] * (trueZ[0] - trueZ[2]) - (trueZ[1] - trueZ[0]) * trueDiff[2];
+			float b = (trueZ[1] - trueZ[0]) * (trueX[2] - trueX[0]) - (trueX[1] - trueX[0]) * (trueZ[2] - trueZ[0]);
+			float c = (trueX[1] - trueX[0]) * trueDiff[2] + trueDiff[0] * (trueX[2] - trueX[0]);
 			float dzx = -a / c, dzy = b / c;
 			//当三角形面积为0时，c=0，此时需要转为线的方式计算dzx与dzy
 			if (glm::abs(c) < EPSILON) {
@@ -306,13 +314,17 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 				if (glm::abs(faceDiff[j]) < EPSILON) {
 					continue;
 				}
-				float dx = (tri[nextJ].x - tri[j].x) / faceDiff[j];
 				//若tri[j]不是上顶点，则交换curJ与nextJ的值。同时当上顶点为非极值点时，将其往下一行
 				if (faceDiff[j] < 0) {
 					std::swap(curJ, nextJ);
 				}
-				float x = tri[curJ].x;
+				const float dx = (trueX[nextJ] - trueX[curJ]) / (trueY[curJ] - trueY[nextJ]);
 				int ymax = static_cast<int>(tri[curJ].y), ymin = static_cast<int>(tri[nextJ].y);
+				//边的 x 取真实边在第一条采样线 ymax 上的位置
+				float x = trueX[curJ] + dx * (trueY[curJ] - static_cast<float>(ymax));
+				if (ymin < rowMin) {
+					ymin = rowMin;
+				}
 				if ((tri[curJ].y - tri[nextJ].y) * (tri[curJ].y - tri[preJ].y) < -EPSILON) {
 					ymax--;
 					x += dx;
@@ -326,8 +338,10 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 				if (ymax >= 0) {
 				    //记录该边进入扫描线时的参考点 (x, ymax)，以及深度平面在该点的取值。
 				    //渲染时用平面方程直接求值，不再沿扫描线逐行累加
-				    const float zRef = tri[curJ].z + (tri[curJ].y - ymax) * dzy + (x - tri[curJ].x) * dzx;
-				    m_classifyEdgeTables[ymax].push_back({ x, dx, ymax - ymin + 1, zRef, id });
+				    const float zRef = trueZ[curJ] + (trueY[curJ] - ymax) * dzy + (x - trueX[curJ]) * dzx;
+				    if (ymax >= ymin) {
+				    	m_classifyEdgeTables[ymax].push_back({ x, dx, ymax - ymin + 1, zRef, id });
+				    }
 				}
 			}
 		}

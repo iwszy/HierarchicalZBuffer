@@ -126,9 +126,9 @@ void HierarchicalZBuffer::rasterizeTriangles(const std::vector<int>& triangles, 
         const int triNum = model.getClippedTriangles(*it, m_mvp, m_nearDistance, m_screenWidth, m_screenHeight, tris);
         for (int t = 0; t < triNum; t++) {
             glm::vec3* tri = tris + t * 3;
-            for (int j = 0; j < 3; j++) {
-                tri[j].y = static_cast<float>(static_cast<int>(tri[j].y));
-            }
+            //不再把顶点 y 向零取整：那是把几何整体下移最多 1 像素，会让三角形多占一行
+            //（有时正好是深度逐位并列的那一行，见 NOTES.md 里黑线的排查）。
+            //采样线取整改在光栅化内核里按 ceil/floor 做，覆盖范围与朴素 z-Buffer 的格点判定一致
             if (m_pyramid.isNeedRasterize(tri)) {
                 rasterizeTriangle(tri, diffuseColor * diffuseIntensity);
             }
