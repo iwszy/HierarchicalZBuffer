@@ -5,6 +5,7 @@
 #include "stb_image.hpp"
 #include "stb_image_write.hpp"
 #include "triangleRasterizer.hpp"
+#include "outputPath.hpp"
 
 HierarchicalZBuffer::HierarchicalZBuffer(int width, int height) : m_pyramid(width, height) {
     m_structure = SceneStructure::BVH;
@@ -46,11 +47,10 @@ void HierarchicalZBuffer::showInfo() const {
 
 void HierarchicalZBuffer::render() const {
     stbi_flip_vertically_on_write(1);
-    std::string modelName = m_modelName;
-    const char* prefix = (m_structure == SceneStructure::Octree)
-        ? "results/OctreeHierarchicalZBuffer_"
-        : "results/HierarchicalZBuffer_";
-    stbi_write_png(modelName.insert(0, prefix).append(".png").c_str(), m_width, m_height, 4, m_image, 0);
+    const char* algorithm = (m_structure == SceneStructure::Octree)
+        ? "OctreeHierarchicalZBuffer"
+        : "HierarchicalZBuffer";
+    stbi_write_png(hzb::outputPath(algorithm, m_modelName).c_str(), m_width, m_height, 4, m_image, 0);
 }
 
 HierarchicalZBuffer::ScreenBounds HierarchicalZBuffer::projectBounds(float xmin, float xmax, float ymin, float ymax, float zmin, float zmax, const glm::mat4& mvp) {

@@ -5,6 +5,7 @@
 #include "stb_image.hpp"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.hpp"
+#include "outputPath.hpp"
 
 BasicZBuffer::BasicZBuffer(int width, int height) {
     m_width = width;
@@ -34,8 +35,7 @@ void BasicZBuffer::showInfo() const {
 
 void BasicZBuffer::render() const {
     stbi_flip_vertically_on_write(1);
-    std::string modelName = m_modelName;
-    stbi_write_png(modelName.insert(0, "results/BasicZBuffer_").append(".png").c_str(), m_width, m_height, 4, m_image, 0);
+    stbi_write_png(hzb::outputPath("BasicZBuffer", m_modelName).c_str(), m_width, m_height, 4, m_image, 0);
 }
 
 void BasicZBuffer::rasterizeScene(Model& model, Scene& scene) {

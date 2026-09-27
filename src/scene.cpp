@@ -39,7 +39,9 @@ glm::mat4 Scene::getView() const{
 }
 
 glm::mat4 Scene::getProjection() const {
-    float top = glm::tan(m_fov * PI / 360) * glm::abs(m_near);
+    //注意 PI 是 double，这里全程按 double 计算再显式收成 float —— 只是把原来的隐式转换写出来，
+    //数值与改写前逐位相同（改成 float 运算会让投影矩阵的最后一位变化，进而改变输出图）。
+    float top = static_cast<float>(glm::tan(m_fov * PI / 360) * glm::abs(m_near));
     float right = static_cast<float>(m_width) / static_cast<float>(m_height) * top;
     glm::mat4 projection(1.0f);
     projection[0][0] = m_near / right;
@@ -53,9 +55,10 @@ glm::mat4 Scene::getProjection() const {
 
 glm::mat4 Scene::getViewport() const {
     glm::mat4 viewport(1.0f);
-    viewport[0][0] = m_width / 2;
-    viewport[1][1] = m_height / 2;
-    viewport[0][3] = m_width / 2;
-    viewport[1][3] = m_height / 2;
+    //m_width / 2 是整数除法，结果再转 float —— 同样只是把隐式转换写显式
+    viewport[0][0] = static_cast<float>(m_width / 2);
+    viewport[1][1] = static_cast<float>(m_height / 2);
+    viewport[0][3] = static_cast<float>(m_width / 2);
+    viewport[1][3] = static_cast<float>(m_height / 2);
     return viewport;
 }

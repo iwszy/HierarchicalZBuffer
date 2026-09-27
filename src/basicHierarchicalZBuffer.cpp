@@ -3,6 +3,7 @@
 #include "stb_image.hpp"
 #include "stb_image_write.hpp"
 #include "triangleRasterizer.hpp"
+#include "outputPath.hpp"
 
 BasicHierarchicalZBuffer::BasicHierarchicalZBuffer(int width, int height) : m_pyramid(width, height) {
     m_width = width;
@@ -28,8 +29,7 @@ void BasicHierarchicalZBuffer::showInfo() const {
 
 void BasicHierarchicalZBuffer::render() const {
     stbi_flip_vertically_on_write(1);
-    std::string modelName = m_modelName;
-    stbi_write_png(modelName.insert(0, "results/BasicHierarchicalZBuffer_").append(".png").c_str(), m_width, m_height, 4, m_image, 0);
+    stbi_write_png(hzb::outputPath("BasicHierarchicalZBuffer", m_modelName).c_str(), m_width, m_height, 4, m_image, 0);
 }
 
 void BasicHierarchicalZBuffer::rasterizeScene(Model& model, Scene& scene) {

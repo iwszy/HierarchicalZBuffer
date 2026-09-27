@@ -106,6 +106,10 @@ public:
 	/*! @brief 展示\建表时间、渲染时间以及总时间
 	 */
 	void showInfo() const;
+	/*! @brief 本帧的渲染耗时（毫秒） */
+	inline double getRenderTime() const { return m_renderTime.count(); }
+	/*! @brief 本帧的总耗时（含建表时间，毫秒） */
+	inline double getTotalTime() const { return (mode == 1) ? m_renderTime.count() : (m_buildTableTime + m_renderTime).count(); }
 	/*! @brief 设置渲染模式
 	 *  @param modelNum: 渲染模式，1表示特化模式，其余为经典模式
 	 */

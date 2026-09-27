@@ -76,13 +76,47 @@ cmake --build build --config Release
 
 ## 使用方式
 
-直接运行即可，程序会依次渲染全部 11 个场景（6 个自带模型 + Sponza + 4 个体素城市），
-共 66 张结果图；整轮约 7 秒。**注意其中 4 个高遮挡场景是在程序内生成的**，见
-`src/occlusionScene.hpp`，不需要额外的模型文件。
+不带任何参数时渲染全部 11 个场景 × 6 种算法，共 66 张结果图，整轮约 7 秒：
 
-```
+```bash
 HierarchicalZBuffer.exe
 ```
+
+**其中 4 个高遮挡场景是程序内生成的**（见 `src/occlusionScene.hpp`），不需要额外的模型文件。
+
+### 命令行选项
+
+```
+  -s, --scene <名>[,名...]   只渲染指定场景（用 --list 查可用名字）
+  -a, --alg   <名>[,名...]   只运行指定算法
+  -l, --list                 列出可用的场景与算法后退出
+  -n, --repeat <次数>        每个场景每个算法重复渲染的遍数（默认 1）
+      --stats  <min|mean|median>
+                             重复多次时报告的统计量（默认 mean）
+  -o, --output <目录>        结果图输出目录（默认 results）
+      --no-images            不写结果图，只计时
+      --verify <目录>        渲染后与 <目录> 下的图逐字节比对
+  -h, --help                 显示用法
+```
+
+场景名与算法名就是结果图文件名的两半（`<算法名>_<场景名>.png`），所以 `--alg` 与
+`--verify` 用的是同一套名字，不需要额外的映射表。
+
+几个例子：
+
+```bash
+# 只看一个场景上三种层次 Z-Buffer 的差别
+HierarchicalZBuffer.exe --scene sponza --alg BasicHierarchicalZBuffer,HierarchicalZBuffer,OctreeHierarchicalZBuffer
+
+# 复现上面性能数据的采集方式：每个组合跑 10 遍取平均
+HierarchicalZBuffer.exe --repeat 10 --no-images
+
+# 回归验证：先在已知正确的版本上生成一份金标准，之后任何改动都拿它逐字节比对
+HierarchicalZBuffer.exe --output golden
+HierarchicalZBuffer.exe --output out --verify golden
+```
+
+退出码：`0` 正常；`1` `--verify` 发现不一致（或金标准缺失）；`2` 参数错误。
 
 > 性能数据请务必在 **Release** 配置下采集。Debug 配置下 glm 的模板数学无法内联，
 > 光栅化部分会慢 10~30 倍，而层次结构的构建只慢约 1.1 倍，

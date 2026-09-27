@@ -36,6 +36,10 @@ public:
 	/*! @brief 展示建金字塔时间、渲染时间和总时间
 	 */
 	void showInfo() const;
+	/*! @brief 本帧的渲染耗时（毫秒） */
+	inline double getRenderTime() const { return m_renderTime.count(); }
+	/*! @brief 本帧的总耗时（含建金字塔时间，毫秒） */
+	inline double getTotalTime() const { return (m_buildPyramidTime + m_renderTime).count(); }
 private:
 	/*! @brief Z-max 金字塔，取代了原来的指针四叉树
 	 *

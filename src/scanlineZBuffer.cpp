@@ -3,6 +3,7 @@
 #include "stb_image.hpp"
 #include "stb_image_write.hpp"
 #include "triangleRasterizer.hpp"
+#include "outputPath.hpp"
 
 ScanlineZBuffer::ScanlineZBuffer(int width, int height) {
 	m_width = width;
@@ -39,12 +40,8 @@ void ScanlineZBuffer::showInfo() const {
 
 void ScanlineZBuffer::render() const {
 	stbi_flip_vertically_on_write(1);
-	std::string modelName = m_modelName;
-	if (mode == 1) {
-		stbi_write_png(modelName.insert(0, "results/SpecialScanlineZBuffer_").append(".png").c_str(), m_width, m_height, 4, m_image, 0);
-	}else {
-		stbi_write_png(modelName.insert(0, "results/ClassicScanlineZBuffer_").append(".png").c_str(), m_width, m_height, 4, m_image, 0);
-	}
+	const char* algorithm = (mode == 1) ? "SpecialScanlineZBuffer" : "ClassicScanlineZBuffer";
+	stbi_write_png(hzb::outputPath(algorithm, m_modelName).c_str(), m_width, m_height, 4, m_image, 0);
 }
 
 void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {

@@ -146,6 +146,10 @@ public:
 	/*! @brief 展示建金字塔时间、加速结构建立时间、渲染时间以及总时间
 	 */
 	void showInfo() const;
+	/*! @brief 本帧的渲染耗时（毫秒） */
+	inline double getRenderTime() const { return m_renderTime.count(); }
+	/*! @brief 本帧的总耗时（含建金字塔与建树时间，毫秒） */
+	inline double getTotalTime() const { return (m_buildPyramidTime + m_buildBVHTime + m_renderTime).count(); }
 
 private:
 	/*! @brief 包围盒投影到屏幕空间的结果 */
