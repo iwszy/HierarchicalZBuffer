@@ -50,14 +50,29 @@
 
 ## 构建与运行
 
-```
-环境：Windows + Visual Studio 2022（v143），C++14
-依赖：include/glm、src/stb_image*.hpp 均已随仓库提供，无需额外配置
+**C++17**。依赖只有两项，均已随仓库提供，无需额外配置：
+`include/glm/`（向量矩阵运算）、`src/stb_image*.hpp`（PNG 读写）。
 
-直接打开 HierarchicalZBuffer.sln，选择 Release | x64 运行即可。
-程序的工作目录需要是工程根目录（要读 models/、写 results/），
-VS 默认的调试工作目录就是 $(ProjectDir)，无需改动。
+### CMake（推荐）
+
+```bash
+cmake -B build                              # Windows 上会自动选用已安装的 Visual Studio
+cmake --build build --config Release
+
+# 单配置生成器（Ninja / Makefile）下可以省掉 --config：
+#   cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build
 ```
+
+产物在 `build/Release/HierarchicalZBuffer.exe`（单配置生成器下是 `build/HierarchicalZBuffer`）。
+
+### Visual Studio 解决方案
+
+`HierarchicalZBuffer.sln` 仍然保留：直接打开，选 Release | x64 运行即可。
+
+> **两条构建路径的产出是逐字节相同的**（已核对 36 张自带模型的结果图）。
+> 程序的工作目录必须是**工程根目录**（要读 `models/`、写 `results/`）：
+> CMake 已经通过 `VS_DEBUGGER_WORKING_DIRECTORY` 配好，在 Visual Studio 里 F5 可直接运行；
+> 命令行下请在根目录执行，或者留意相对路径。
 
 ## 使用方式
 

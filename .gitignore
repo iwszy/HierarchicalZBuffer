@@ -22,6 +22,10 @@
 *.vsp
 *.vspx
 
+# CMake 构建目录
+build/
+build-*/
+
 # 编译中间目录
 [Bb]in/
 [Oo]bj/
