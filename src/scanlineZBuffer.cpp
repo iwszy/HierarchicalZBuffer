@@ -152,7 +152,12 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 			ActiveEdgeTable& edge = m_aet[s];
 			int id = edge.id;
 			const glm::vec3& color = m_triangles[id].color;
-			//当识别到该边对只有1条边，表示该边对应的三角形只跨越1条扫描线，此时直接从左向右扫描三角形
+			//dyRight == -1 说明这个三角形的另一条边没有进入采样行区间（投影比 1 像素还薄）：
+			//此时 [xLeft, xLeft + dxLeft] 才是它真实跨度只当整个三角形都落在这一行上
+			//（dyLeft == 1，退化成一条长条）时；否则这一行的跨度和深度都是平面方程的外推值，
+			//跳过它，让真正在该处的面留在屏幕上。
+			const bool singleEdge = (edge.dyRight == -1);
+			const bool drawSpan = !singleEdge || edge.dyLeft == 1;
 			const float spanLeft = edge.xLeft;
 			const float spanRight = (edge.dyRight == -1) ? (edge.xLeft + edge.dxLeft) : edge.xRight;
 			int xLeft = static_cast<int>(std::ceil(spanLeft)), xRight = static_cast<int>(std::floor(spanRight));
@@ -163,23 +168,25 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 			if (xRight >= m_width) {
 				xRight = m_width - 1;
 			}
-			//本行的深度由平面方程直接求值（不再逐像素累加）；求值位置还要夹回该扫描行的
-			//真实跨度之内：像素范围是向零截断得到的，最左那个像素的整数坐标可能落在跨度
-			//之外最多 1 像素，而窄长三角形的 dzx 可以很大，外推出去深度会被甩出视锥
-			//（实测最大越界幅度到过 36.6，而整个视锥才 [-1, 1]）
+			//本行的深度由平面方程直接求值（不再逐像素累加）；求值位置夹回该扫描行的真实跨度之内。
+			//跨度端点取 ceil/floor 后落进来的像素本来就满足 xLeft <= x <= xRight，这一步是恒等变换；
+			//留着它是为了兜住 |dzx| 极大的窄长三角形：插值误差乘上 |dzx| 仍可能把深度甩出视锥
+			//（早期版本向零截断、最多外推 1 像素时，实测出现过 36.6，而整个视锥才 [-1, 1]）
 			const float rowZ = edge.zRef + (edge.yRef - i) * edge.dzy;
-			for (int j = xLeft; j <= xRight; j++) {
-				const float xc = (j < spanLeft) ? spanLeft : ((static_cast<float>(j) > spanRight) ? spanRight : static_cast<float>(j));
-				//深度取 -z（越远越大），与光栅化内核保持一致
-				const float depth = -(rowZ + (xc - edge.xRef) * edge.dzx);
-				int index = m_width * i + j;
-				if (m_zBuffer[index] < depth) {
-					continue;
-				}
-				m_zBuffer[index] = depth;
-				m_image[index * 4] = static_cast<unsigned char>(color.r * 255);
-				m_image[index * 4 + 1] = static_cast<unsigned char>(color.g * 255);
-				m_image[index * 4 + 2] = static_cast<unsigned char>(color.b * 255);
+			if (drawSpan) {
+					for (int j = xLeft; j <= xRight; j++) {
+					const float xc = (j < spanLeft) ? spanLeft : ((static_cast<float>(j) > spanRight) ? spanRight : static_cast<float>(j));
+					//深度取 -z（越远越大），与光栅化内核保持一致
+					const float depth = -(rowZ + (xc - edge.xRef) * edge.dzx);
+					int index = m_width * i + j;
+					if (m_zBuffer[index] < depth) {
+						continue;
+					}
+					m_zBuffer[index] = depth;
+					m_image[index * 4] = static_cast<unsigned char>(color.r * 255);
+					m_image[index * 4 + 1] = static_cast<unsigned char>(color.g * 255);
+					m_image[index * 4 + 2] = static_cast<unsigned char>(color.b * 255);
+			}
 			}
 			edge.dyLeft--;
 			edge.dyRight--;
@@ -246,7 +253,6 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 			const float trueX[3] = { tri[0].x, tri[1].x, tri[2].x };
 			const float trueY[3] = { tri[0].y, tri[1].y, tri[2].y };
 			const float trueZ[3] = { tri[0].z, tri[1].z, tri[2].z };
-			const int rowMin = static_cast<int>(std::ceil(glm::min(trueY[0], glm::min(trueY[1], trueY[2]))));
 			for (int j = 0; j < 3; j++) {
 				tri[j].y = static_cast<float>(static_cast<int>(tri[j].y));
 			}
@@ -303,7 +309,15 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 						maxX = tri[j].x;
 					}
 				}
-				int flatY = static_cast<int>(tri[0].y);
+				//顶点 y 取整之后三个值相同，说明这个三角形在屏幕上比 1 像素还薄（甚至就是一条线）。
+				//采样行里只有 [ceil(最小 y), floor(最大 y)] 是真实存在的，上面这一行不一定属于它：
+				//那种外推出来的行会与邻面深度逐位并列，把本该属于邻面的像素抢走（见 NOTES.md）。
+				const float trueMinY = glm::min(trueY[0], glm::min(trueY[1], trueY[2]));
+				const float trueMaxY = glm::max(trueY[0], glm::max(trueY[1], trueY[2]));
+				int flatY = static_cast<int>(std::floor(trueMaxY));
+				if (std::ceil(trueMinY) > flatY) {
+					continue;
+				}
 				if (flatY >= 0 && flatY < m_height) {
 				    m_classifyEdgeTables[flatY].push_back({minX, maxX - minX, 1, tri[minIndex].z, id});
 				}
@@ -319,16 +333,18 @@ void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 					std::swap(curJ, nextJ);
 				}
 				const float dx = (trueX[nextJ] - trueX[curJ]) / (trueY[curJ] - trueY[nextJ]);
-				int ymax = static_cast<int>(tri[curJ].y), ymin = static_cast<int>(tri[nextJ].y);
+				//采样行与共享内核同一条规则：边覆盖 [ceil(下端点), floor(上端点)]。
+				//curJ 在 y 上是居中顶点时，它所在的那一行由上一条更陡的边负责，
+				//这条边从 ceil(y)-1 开始 —— 顶点 y 是整数时这正是原来的"往下一行"。
+				const bool isMiddleVertex = (trueY[curJ] - trueY[nextJ]) * (trueY[curJ] - trueY[preJ]) < 0.0f;
+				int ymax = isMiddleVertex ? static_cast<int>(std::ceil(trueY[curJ])) - 1
+				                          : static_cast<int>(std::floor(trueY[curJ]));
+				int ymin = static_cast<int>(std::ceil(trueY[nextJ]));
+				if (ymin > ymax) {
+					continue;
+				}
 				//边的 x 取真实边在第一条采样线 ymax 上的位置
 				float x = trueX[curJ] + dx * (trueY[curJ] - static_cast<float>(ymax));
-				if (ymin < rowMin) {
-					ymin = rowMin;
-				}
-				if ((tri[curJ].y - tri[nextJ].y) * (tri[curJ].y - tri[preJ].y) < -EPSILON) {
-					ymax--;
-					x += dx;
-				}
 				//把边裁剪到渲染窗口内：起始扫描线在窗口上方时，把 x 的插值推进过去
 				if (ymax >= m_height) {
 				    int skip = ymax - (m_height - 1);
