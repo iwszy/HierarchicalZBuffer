@@ -71,7 +71,7 @@ HierarchicalZBuffer::ScreenBounds HierarchicalZBuffer::projectBounds(float xmin,
             sb.valid = false;
             sb.xmin = sb.ymin = std::numeric_limits<float>::lowest();
             sb.xmax = sb.ymax = std::numeric_limits<float>::max();
-            sb.zmin = 0.0f;
+            sb.zmin = -1.0f;   //不可靠时按「最近」处理，宁可多跑也不错误剔除
             return sb;
         }
         const glm::vec3 s(h.x / h.w, h.y / h.w, h.z / h.w);
@@ -79,7 +79,10 @@ HierarchicalZBuffer::ScreenBounds HierarchicalZBuffer::projectBounds(float xmin,
         sb.xmax = std::max(sb.xmax, s.x);
         sb.ymin = std::min(sb.ymin, s.y);
         sb.ymax = std::max(sb.ymax, s.y);
-        sb.zmin = std::min(sb.zmin, std::abs(s.z));
+        //深度一律取 -z（与逐像素 z-test、金字塔、isNeedRasterize 是同一个量）。这里曾经用 |z|：
+        //它在 z_ndc 的过零点（相机前方约 0.6 处，位于视锥【内部】）把深度次序折叠了一次 ——
+        //越过该点的节点 zmin 会被高估，剔除判据因此偏激进
+        sb.zmin = std::min(sb.zmin, -s.z);
     }
     return sb;
 }

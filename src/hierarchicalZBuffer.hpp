@@ -155,7 +155,11 @@ private:
 	/*! @brief 包围盒投影到屏幕空间的结果 */
 	struct ScreenBounds {
 		float xmin, xmax, ymin, ymax;
-		/*! @brief 节点内所有片元中【最小】的深度（也就是离相机最近的那个） */
+		/*! @brief 节点内所有片元中【最小】的深度（也就是离相机最近的那个），取 -z
+		 *
+		 *  包围盒与相机平面相交（valid == false）时取 -1，即按「最近」参与排序，
+		 *  同时本帧放弃剔除（剔除要求它是个可靠的下界）
+		 */
 		float zmin;
 		/*! @brief false 表示包围盒与近平面相交、投影结果不可靠，本帧放弃剔除 */
 		bool valid;
