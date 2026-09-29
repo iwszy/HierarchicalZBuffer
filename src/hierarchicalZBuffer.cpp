@@ -297,7 +297,6 @@ BVHNode* HierarchicalZBuffer::buildBVH(int* triangles, int left, int right, int 
     float ymin = kFloatMax, ymax = kFloatLowest;
     float zmin = kFloatMax, zmax = kFloatLowest;
 	for (int i = left; i <= right; i++) {
-        node->triangles.push_back(triangles[i]);
         xmin = glm::min(xmin, model.getObjectAxisMinimum(triangles[i], 0));
         xmax = glm::max(xmax, model.getObjectAxisMaximum(triangles[i], 0));
         ymin = glm::min(ymin, model.getObjectAxisMinimum(triangles[i], 1));
@@ -312,6 +311,10 @@ BVHNode* HierarchicalZBuffer::buildBVH(int* triangles, int left, int right, int 
     if (faceNum <= MAX_TRIANGLE) {
         node->left = nullptr;
         node->right = nullptr;
+        //只有叶子需要三角形列表：内部节点那份从来没人读，却让整棵树存了 N×层数 个 int
+        //（Sponza 上 393 万个 = 15 MB，实际只需 26 万个 = 1 MB）。
+        //直接 assign 而不是逐个 push_back：一次分配加一次拷贝，顺序与原来完全一致
+        node->triangles.assign(triangles + left, triangles + right + 1);
     }else {
         //此处使用指定轴向的位于中间的三角形的位置作为划分子节点的位置
         int mid = (left + right) / 2;
