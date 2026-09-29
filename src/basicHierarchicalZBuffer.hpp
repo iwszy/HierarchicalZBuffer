@@ -66,7 +66,7 @@ private:
 	/*! @brief 渲染所需时间
 	 */
 	std::chrono::duration<double, std::milli> m_renderTime;
-	/*! @brief 构建 Z-max 金字塔所需时间
+	/*! @brief 每帧重置 Z-max 金字塔所需时间（把整块内存填成最大深度）
 	 */
 	std::chrono::duration<double, std::milli> m_buildPyramidTime;
 

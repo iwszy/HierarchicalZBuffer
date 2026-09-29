@@ -81,6 +81,11 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 		m_renderTime = end - start;
 		return;
 	}
+	//顶点变换每帧都要做：按「每帧的工作算渲染」的口径，它单独计时并进渲染时间，
+	//不混进建表（建表才是经典扫描线结构自身的成本）
+	auto transformStart = std::chrono::steady_clock::now();
+	model.mvpTransform(scene);
+	auto transformEnd = std::chrono::steady_clock::now();
 	auto start = std::chrono::steady_clock::now();
 	generateTables(model, scene);
 	auto end = std::chrono::steady_clock::now();
@@ -214,11 +219,12 @@ void ScanlineZBuffer::rasterizeScene(Model& model, Scene& scene) {
 		m_aetSize = alive;
 	}
 	end = std::chrono::steady_clock::now();
-	m_renderTime = end - start;
+	m_renderTime = (end - start) + (transformEnd - transformStart);
 }
 
-void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
-	model.mvpTransform(scene);
+	//注意：调用方（rasterizeScene）必须已经执行过 model.mvpTransform(scene) ——
+	//顶点变换算每帧的渲染成本，不计入这里的建表时间
+	void ScanlineZBuffer::generateTables(Model& model, Scene& scene) {
 	int faceNum = model.getFaceNum();
 
 	//每次重建都清空上一次留下的状态，使本方法可以重复调用

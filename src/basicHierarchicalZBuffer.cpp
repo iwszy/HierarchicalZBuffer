@@ -24,7 +24,7 @@ BasicHierarchicalZBuffer::~BasicHierarchicalZBuffer() {
 }
 
 void BasicHierarchicalZBuffer::showInfo() const {
-    std::cout << "BasicHierarchicalZBuffer: 建金字塔时间为" << m_buildPyramidTime.count() << "ms, " << "渲染时间为" << m_renderTime.count() << "ms, " << "总时间为" << (m_buildPyramidTime + m_renderTime).count() << "ms" << std::endl;
+    std::cout << "BasicHierarchicalZBuffer: 金字塔重置时间为" << m_buildPyramidTime.count() << "ms, " << "渲染时间为" << m_renderTime.count() << "ms, " << "总时间为" << (m_buildPyramidTime + m_renderTime).count() << "ms" << std::endl;
 }
 
 void BasicHierarchicalZBuffer::render() const {

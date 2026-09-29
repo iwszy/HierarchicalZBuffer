@@ -194,7 +194,7 @@ private:
 	std::string m_modelName;
 	/*! @brief 渲染所需时间 */
 	std::chrono::duration<double, std::milli> m_renderTime;
-	/*! @brief 构建 Z-max 金字塔所需时间 */
+	/*! @brief 每帧重置 Z-max 金字塔所需时间（把整块内存填成最大深度） */
 	std::chrono::duration<double, std::milli> m_buildPyramidTime;
 	/*! @brief 构建场景加速结构所需时间（被复用时为 0） */
 	std::chrono::duration<double, std::milli> m_buildBVHTime;

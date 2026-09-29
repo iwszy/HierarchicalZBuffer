@@ -39,7 +39,7 @@ void HierarchicalZBuffer::setSceneStructure(SceneStructure structure) {
 
 void HierarchicalZBuffer::showInfo() const {
     std::cout << (m_structure == SceneStructure::Octree ? "OctreeHierarchicalZBuffer: " : "HierarchicalZBuffer: ")
-        << "金字塔构建时间为" << m_buildPyramidTime.count() << "ms, "
+        << "金字塔重置时间为" << m_buildPyramidTime.count() << "ms, "
         << (m_structure == SceneStructure::Octree ? "八叉树建立时间为" : "BVH建立时间为") << m_buildBVHTime.count() << "ms, "
         << "渲染时间为" << m_renderTime.count() << "ms, "
         << "总时间为" << (m_buildPyramidTime + m_buildBVHTime + m_renderTime).count() << "ms" << std::endl;
@@ -248,7 +248,11 @@ void HierarchicalZBuffer::rasterizeScene(Model& model, Scene& scene) {
     m_buildPyramidTime = end - start;
 
     const int faceNum = model.getFaceNum();
+    //顶点变换每帧都要做：按「每帧的工作算渲染」的口径单独计时并进渲染时间 ——
+    //原来它夹在金字塔和建树两个计时器之间，三个计时器谁都没算它
+    auto transformStart = std::chrono::steady_clock::now();
     model.mvpTransform(scene);      //光栅化用的是屏幕坐标，每帧都要重新变换
+    auto transformEnd = std::chrono::steady_clock::now();
     m_mvp = scene.getMVP();
 
     //加速结构建在模型空间、与相机无关，同一个模型只需要构建一次，之后每帧直接复用
@@ -262,11 +266,11 @@ void HierarchicalZBuffer::rasterizeScene(Model& model, Scene& scene) {
 
     if (m_structure == SceneStructure::Octree) {
         if (m_octree == nullptr) {
-            m_renderTime = std::chrono::duration<double, std::milli>(0);
+            m_renderTime = transformEnd - transformStart;   //没有可渲染的结构，但顶点变换已经做了
             return;
         }
     } else if (m_bvh == nullptr) {
-        m_renderTime = std::chrono::duration<double, std::milli>(0);
+        m_renderTime = transformEnd - transformStart;   //没有可渲染的结构，但顶点变换已经做了
         return;
     }
 
@@ -284,7 +288,7 @@ void HierarchicalZBuffer::rasterizeScene(Model& model, Scene& scene) {
         recursiveRasterizeBVH(m_bvh, sb, m_pyramid.rootLevel(), 0, 0, model, lightDirection, diffuseColor);
     }
     end = std::chrono::steady_clock::now();
-    m_renderTime = end - start;
+    m_renderTime = (end - start) + (transformEnd - transformStart);
 }
 
 BVHNode* HierarchicalZBuffer::buildBVH(int* triangles, int left, int right, int axis, Model& model) {
