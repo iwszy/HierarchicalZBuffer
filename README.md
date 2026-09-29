@@ -50,7 +50,7 @@
 
 ## 构建与运行
 
-**C++17**。依赖只有两项，均已随仓库提供，无需额外配置：
+**C++14**（两条构建路径都显式写死、不使用编译器扩展：VS 工程里是 `stdcpp14`，CMake 里是 `CMAKE_CXX_STANDARD 14` 加 `CMAKE_CXX_EXTENSIONS OFF`）。依赖只有两项，均已随仓库提供，无需额外配置：
 `include/glm/`（向量矩阵运算）、`src/stb_image*.hpp`（PNG 读写）。
 
 ### CMake（推荐）

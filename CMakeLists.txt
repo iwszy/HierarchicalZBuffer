@@ -5,7 +5,7 @@ project(HierarchicalZBuffer
         DESCRIPTION "层次 Z-Buffer 消隐算法实现"
         LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)   # 与 VS 工程一致（vcxproj 里写的是 stdcpp14）
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
