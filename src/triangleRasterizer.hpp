@@ -9,7 +9,8 @@
  *
  *  这是普通 z-Buffer、扫描线 z-Buffer(特化模式)、简单模式层次 z-Buffer、
  *  完整模式层次 z-Buffer 共用的光栅化内核。做法是把三角形按扫描线切成
- *  "上半部分 / 下半部分 / 退化成水平线"三种情况，逐行从左到右遍历像素。
+ *  "上半部分 / 下半部分"两种情况，逐行从左到右遍历像素；
+ *  面积不足 0.01 平方像素的退化三角形（含退化成一条水平线的极端情形）在这里被丢掉。
  *
  *  深度的求值方式见文件内 depthAt 的说明：先解出深度平面的 dzx、dzy，
  *  再让每个像素直接代回平面方程，而不是沿扫描线累加状态。
@@ -67,26 +68,10 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
     float dzx = -a / c, dzy = b / c;
     //屏幕空间面积 = |c| / 2。三角形退化成极窄长条、甚至一条线时，过这三点的平面是病态的
     //（|dzx| 可以大到几十，而三角形自身的深度跨度只有千分之几），它给出的片元深度没有意义；
-    //这种三角形本来也覆盖不到一个像素，直接跳过。
+    //这种三角形本来也覆盖不到一个像素，直接跳过。这条判据同时也吃掉了"三个顶点 y 相同"
+    //（退化成一条水平线、|c| 必然小于阈值）的极端情形，所以后面不需要再单独处理。
     if (glm::abs(c) < 2.0f * kMinScreenArea) {
         return;
-    }
-    if (glm::abs(c) < kEpsilon) {
-        //与经典扫描线算法建表的思路相同，当三角形是一条线时执行以下操作
-        int minXIndex = 0, maxXIndex = 0;
-        float minX = face[0].x, maxX = minX;
-        for (int j = 1; j < 3; j++) {
-            if (minX > face[j].x) {
-                minX = face[j].x;
-                minXIndex = j;
-            }
-            if (maxX < face[j].x) {
-                maxX = face[j].x;
-                maxXIndex = j;
-            }
-        }
-        dzx = (face[maxXIndex].z - face[minXIndex].z) / (maxX - minX);
-        dzy = (face[2].z - face[0].z) / faceDiff[2];
     }
     bool isTopFlat = false, isBottomFlat = false, isLongAtLeft = false;
     if (glm::abs(faceDiff[0]) < kEpsilon) {
@@ -114,17 +99,15 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
     auto clampToSpan = [](float x, float lo, float hi) {
         return x < lo ? lo : (x > hi ? hi : x);
     };
-    float xLeft, xRight, dxleft, dxRight, z;
+    float xLeft, xRight, dxleft, dxRight;
     if (isTopFlat) {
         //如果这个三角形是上平底，则根据顶点face[0],face[1]的左右关系赋值相关参数
         if (face[0].x < face[1].x) {
             xLeft = face[0].x; xRight = face[1].x;
             dxleft = (face[0].x - face[2].x) / faceDiff[2]; dxRight = (face[2].x - face[1].x) / faceDiff[1];
-            z = face[0].z;
         } else {
             xLeft = face[1].x; xRight = face[0].x;
             dxleft = (face[2].x - face[1].x) / faceDiff[1]; dxRight = (face[0].x - face[2].x) / faceDiff[2];
-            z = face[1].z;
         }
     } else {
         //如果这个三角形不是上平底，则根据边face[0]-face[1],face[0]-face[2]的左右关系赋值相关参数
@@ -134,7 +117,6 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
             std::swap(dxleft, dxRight);
             isLongAtLeft = true;
         }
-        z = face[0].z;
     }
     //采样点取整数格点 (x, y)，与朴素 z-Buffer 的 barycentric 判定（see basicZBuffer.cpp）一致：
     //一行/一列只有格点真的落在三角形里才该被画。所以上界取 floor、下界取 ceil —— 原来的
@@ -218,28 +200,6 @@ inline void rasterizeTriangleScanline(glm::vec3* face, glm::vec3 color,
             }
             xLeft += dxleft;
             xRight += dxRight;
-        }
-    } else if (isTopFlat) {
-        //当三角形既是上平底又是下平底时，即三角形退化成一条平行于 x 轴的线时，直接从左到右光栅化
-        //此时 faceDiff 全为 0、平面方程退化，所以沿用 (xLeft, z) 这个参考点沿 x 线性求值
-        if (ymax < 0 || ymax >= height) {
-            return;   //该退化三角形完全位于窗口外
-        }
-        const float lineMinX = glm::min(face[0].x, glm::min(face[1].x, face[2].x));
-        const float lineMaxX = glm::max(face[0].x, glm::max(face[1].x, face[2].x));
-        int ixLeft = static_cast<int>(std::ceil(lineMinX));
-        int ixRihgt = static_cast<int>(std::floor(lineMaxX));
-        if (ixLeft < 0) ixLeft = 0;
-        if (ixRihgt >= width) ixRihgt = width - 1;
-        for (int x = ixLeft; x <= ixRihgt; x++) {
-            const float depth = -(z + dzx * (clampToSpan(static_cast<float>(x), lineMinX, lineMaxX) - xLeft));
-            if (!storeDepth(x, ymax, depth)) {
-                continue;
-            }
-            const int index = ymax * width + x;
-            image[index * 4] = static_cast<unsigned char>(color.r * 255);
-            image[index * 4 + 1] = static_cast<unsigned char>(color.g * 255);
-            image[index * 4 + 2] = static_cast<unsigned char>(color.b * 255);
         }
     }
 }
