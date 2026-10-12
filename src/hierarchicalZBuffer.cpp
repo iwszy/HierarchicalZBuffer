@@ -187,21 +187,28 @@ void HierarchicalZBuffer::recursiveRasterizeOctree(OctreeNode* octNode, const Sc
     //深度金字塔填满，后面的兄弟子树才可能被整棵剔除。
     OctreeNode* order[8];
     ScreenBounds bounds[8];
+    float keys[8];
     int n = 0;
     for (int i = 0; i < 8; i++) {
         OctreeNode* child = octNode->children[i];
         if (child == nullptr) {
             continue;
         }
+        //剔除用紧包围盒：三角形按重心分配，可能伸出八分体单元，只有紧包围盒才包住它
         const ScreenBounds cb = projectBounds(child->bxmin, child->bxmax, child->bymin, child->bymax, child->bzmin, child->bzmax, m_mvp);
+        //排序用八分体单元：8 个单元互不重叠，按单元的最近深度排才是真正的由近到远
+        const ScreenBounds cellB = projectBounds(child->xmin, child->xmax, child->ymin, child->ymax, child->zmin, child->zmax, m_mvp);
+        const float key = cellB.zmin;
         int j = n++;
-        while (j > 0 && bounds[j - 1].zmin > cb.zmin) {
+        while (j > 0 && keys[j - 1] > key) {
             bounds[j] = bounds[j - 1];
             order[j] = order[j - 1];
+            keys[j] = keys[j - 1];
             j--;
         }
         bounds[j] = cb;
         order[j] = child;
+        keys[j] = key;
     }
     for (int i = 0; i < n; i++) {
         recursiveRasterizeOctree(order[i], bounds[i], level, qx, qy, model, lightDirection, diffuseColor);
